@@ -1,0 +1,36 @@
+--REWRITE--
+
+This directory contains code and related resources for using HTK to do
+speech activity detection (SAD). 
+
+Apart from model data, it contains two executable scripts, each of which
+is discussed in turn:
+
+   perform_sad.py
+   htk_2_sec.py
+
+
+I. perform_sad.py
+-----------------
+This performs SAD for a series of 16 KHz single-channel wave files.
+The files may be specified individually on the command line or via
+a script file, each line of which contains the path to a single wav
+file to be processed. For each wav file a label file is produced with
+one line per segment detected in the following format:
+
+ONSET OFFSET LAB
+
+where ONSET and OFFSET are the onset and offset of the segment in 
+HTK 100 ns units and LAB is one of {spch, nonspch}.
+
+The minimum durations for speech and non-speech segments, the output
+directory, and the number of threads to use during SAD are all
+customizable via flags. Run ./perform_sad.py without any arguments
+to see example usage and help.
+
+
+II. htk_2_sec.py
+----------------
+This is a convenience script to convert the output of perform_sad.py
+from htk units to seconds. Its usage should be self-explanatory, but
+run ./htk_2_sec.py without any arguments for help.
