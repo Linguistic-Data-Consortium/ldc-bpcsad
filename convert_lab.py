@@ -54,7 +54,6 @@ def write_tdf(segs, lf):
                       'speaker',
                       'NA',
                       'NA',
-                      'NA',
                       'speech',
                       '0',
                       '0',
