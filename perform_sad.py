@@ -24,8 +24,11 @@ def segment_file(af, labDir, ext):
     bn = os.path.basename(af);
     uid = os.path.splitext(bn)[0];
     wf = os.path.join(tmpDir, '%s.wav' % uid);
-    subprocess.call(['sox', af, '-r', '16000', wf]);
- 
+
+    with open(os.devnull, 'wb') as f:
+        cmd = ['sox', af, '-r', '16000', wf];
+        subprocess.call(cmd, stdout=f, stderr=f);
+
     # perform sad
     cmd = ['HVite',
            '-T', '0',
@@ -40,25 +43,28 @@ def segment_file(af, labDir, ext):
            os.path.join(scriptDir, 'dict'),
            os.path.join(scriptDir, 'monophones'),
            wf,
-          ];
-    subprocess.call(cmd);
+           ];
+    with open(os.devnull, 'wb') as f:
+        subprocess.call(cmd, stdout=f, stderr=f);
 
     # merge segs
     olf = os.path.join(tmpDir, '%s.%s' % (uid, ext));
     nlf = os.path.join(labDir, '%s.%s' % (uid, ext));
 
-    segs = read_label_file(olf, inHTKUnits=True);
-    segs = merge_segs(segs);
-    segs = elim_short_segs(segs, targetLab='nonspch', replaceLab='spch',
+    try:
+        segs = read_label_file(olf, inHTKUnits=True);
+        segs = merge_segs(segs);
+        segs = elim_short_segs(segs, targetLab='nonspch', replaceLab='spch',
                            minDur=args.minNonSpeechDur);
-    segs = merge_segs(segs);
-    segs = elim_short_segs(segs, targetLab='spch', replaceLab='nonspch',
-                           minDur=args.minSpeechDur);
-    segs = merge_segs(segs);
-    write_label_file(nlf, segs);
-
-    # cleanup
-    shutil.rmtree(tmpDir);
+        segs = merge_segs(segs);
+        segs = elim_short_segs(segs, targetLab='spch', replaceLab='nonspch',
+                               minDur=args.minSpeechDur);
+        segs = merge_segs(segs);
+        write_label_file(nlf, segs);
+    except IOError:
+        return af;
+    finally:
+        shutil.rmtree(tmpDir);
 
 
 def merge_segs(segs):
@@ -147,4 +153,15 @@ if __name__ == '__main__':
     numThreads = min(len(args.afs), args.maxThreads);
 
     # perform SAD
-    Parallel(n_jobs=numThreads, verbose=0)(delayed(segment_file)(af, args.labDir, args.ext) for af in args.afs);
+    res = Parallel(n_jobs=numThreads, verbose=0)(delayed(segment_file)(af, args.labDir, args.ext) for af in args.afs);
+    
+    # print failures
+    failures = [r for r in res if r];
+    n = len(res);
+    nFail = len(failures);
+    nSucc = n - len(failures);
+    print('%s out of %s files successfully segmented.' % (nSucc, n));
+    if nFail > 0:
+        print('There were errors with the following files.');
+        for af in failures:
+            print(af);
