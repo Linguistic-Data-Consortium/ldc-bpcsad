@@ -52,7 +52,5 @@ iii) Try splitting the recording into a number of shorter recordings. For very, 
 
 III. convert_lab.py
 --------------------
-This is a convenience script to convert the output of perform_sad.py
-from htk units to seconds. Its usage should be self-explanatory, but
-run ./htk_2_sec.py without any arguments for help.
+TO DO
 
