@@ -18,7 +18,7 @@ II. perform_sad.py
 -----------------
 a) Overview
 
-This utilitity performs SAD for mono-channel audio files with sampling rates >= 8000 (while the detector will run on audio sampled at a lower frequency, the results will not be optimal). Most audio file formats are supported, with a complete list available at: http://sox.sourceforge.net/soxformat.html.
+This utilitity performs SAD for mono-channel audio files with sampling rates >= 8000 Hz (while the detector will run on audio sampled at a lower frequency, the results will not be optimal). Most audio file formats are supported, with a complete list available at: http://sox.sourceforge.net/soxformat.html.
 
 
 b) Usage
@@ -27,13 +27,13 @@ From the command line, run
 
 ./perform_sad.py -L /path/to/outputDir af1 af2 af3 ...
 
-which will run SAD on the files af1, af2, af3, ..., outputting a label file for each in outputDir. The files may be specified individually via the command line, as above, or from a script file (continaing one path per line) using the -S switch. Label files list the detected speech/non-speech segments on individual lines, with each line having the following format:
+which will run SAD on the files af1, af2, af3, ..., outputting a label file for each in outputDir. The files may be specified individually via the command line, as above, or from a script file (containing one path per line) using the -S switch. Label files list the detected speech/non-speech segments on individual lines, with each line having the following format:
 
 ONSET OFFSET LAB
 
 where ONSET and OFFSET are the onset and offset of the segment in seconds and LAB is one of {spch, nonspch}.
 
-Additional command-line switches exist to control the minimum duration for speech segments, the minimum duration for non-speech segments, the number of threads to use (if you have sufficient memory, a godo rule of thumb is 1.5 times the number of logical cores), and the label file extension. For a listing of all options, run perform_sad.py without any arguments.
+Additional command-line switches exist to control the minimum duration for speech segments, the minimum duration for non-speech segments, the number of threads to use (if you have sufficient memory, a good rule of thumb is 1.5 times the number of logical cores), and the label file extension. For a listing of all options, run perform_sad.py without any arguments.
 
 
 c) Troubleshooting
@@ -47,7 +47,7 @@ ii) Check that the audio file is in a format that SOX accepts:
 http://sox.sourceforge.net/soxformat.html.
 
 
-iii) Try splitting the recording into a number of shorter recordings. For very, very long recordings (on the order of an hour or longer), Viterbi decoding may fail. If this happens, the best solution is to manually split the recording into  two or more shorter files, each less than an hour in length,\.
+iii) Try splitting the recording into a number of shorter recordings. For very, very long recordings (on the order of an hour or longer), Viterbi decoding may fail. If this happens, the best solution is to manually split the recording into  two or more shorter files, each less than an hour in length.
 
 
 III. convert_lab.py
