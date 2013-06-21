@@ -152,9 +152,9 @@ if __name__ == '__main__':
     parser.add_argument('-X', nargs='?', default='lab',
                         metavar='ext', dest='ext',
                         help="Set output label file extension (default: lab)");
-    parser.add_argument('--spch_scale_factor', nargs='?', default=1, type=float,
+    parser.add_argument('-a', nargs='?', default=1, type=float,
                         metavar='k', dest='speech_scale_factor',
-                        help='Set speech likelihood scale factor (default: 1)');
+                        help='Set speech scale factor. This factor post-multiples the speech model acoustic likelihoods. (default: 1)');
     parser.add_argument('--spch', nargs='?', default=0.500, type=float,
                         metavar='tsec', dest='minSpeechDur',
                         help='Set min speech dur (default: 0.5 s)');
