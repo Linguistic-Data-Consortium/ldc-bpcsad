@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse;
+from math import log;
 import os;
 import shutil;
 import subprocess;
@@ -35,7 +36,7 @@ def segment_file(af, labDir, ext):
            '-w', os.path.join(scriptDir, 'phone_net'),
            '-l', tmpDir,
            '-H', os.path.join(scriptDir, 'model', 'macros'),
-           '-H', os.path.join(scriptDir, 'model', 'hmmdefs'),
+           '-H', os.path.join(scriptDir, 'model', 'hmmdefs_temp'),
            '-C', os.path.join(scriptDir, 'model', 'config'),
            '-p', '-0.3',
            '-s', '5.0',
@@ -66,6 +67,28 @@ def segment_file(af, labDir, ext):
     finally:
         shutil.rmtree(tmpDir);
 
+
+def write_hmmdefs(oldf, newf, speech_scale_factor=1):
+    """
+    """
+    with open(oldf, 'r') as f:
+        lines = f.readlines();
+
+    with open(newf, 'w') as g:
+        g.writelines(lines[:3]); # header
+        curr_phone = None;
+        for line in lines[3:]:
+            # keep track of which model we are dealing with
+            if line.startswith('~h'):
+                curr_phone = line[3:].strip('\"\n');
+            # modify GCONST only for mixtures of speech models
+            if line.startswith('<GCONST>') and curr_phone != 'nonspch':
+                gconst = float(line[9:-1]);
+                #print speech_scale_factor;
+                gconst += log(speech_scale_factor);
+                line = '<GCONST> %.6e\n' % gconst;
+            g.write(line);
+                
 
 def merge_segs(segs):
     """Merge sequences of segments with same label.
@@ -129,6 +152,9 @@ if __name__ == '__main__':
     parser.add_argument('-X', nargs='?', default='lab',
                         metavar='ext', dest='ext',
                         help="Set output label file extension (default: lab)");
+    parser.add_argument('--spch_scale_factor', nargs='?', default=1, type=float,
+                        metavar='k', dest='speech_scale_factor',
+                        help='Set speech likelihood scale factor (default: 1)');
     parser.add_argument('--spch', nargs='?', default=0.500, type=float,
                         metavar='tsec', dest='minSpeechDur',
                         help='Set min speech dur (default: 0.5 s)');
@@ -152,9 +178,17 @@ if __name__ == '__main__':
     # set num threads
     numThreads = min(len(args.afs), args.maxThreads);
 
+    # write temporary hmmdefs file
+    old_hmmdefs = os.path.join(scriptDir, 'model', 'hmmdefs');
+    new_hmmdefs = os.path.join(scriptDir, 'model', 'hmmdefs_temp');
+    write_hmmdefs(old_hmmdefs, new_hmmdefs, args.speech_scale_factor);
+
     # perform SAD
     res = Parallel(n_jobs=numThreads, verbose=0)(delayed(segment_file)(af, args.labDir, args.ext) for af in args.afs);
     
+    # remove temporary hmmdefs file
+    os.remove(new_hmmdefs);
+
     # print failures
     failures = [r for r in res if r];
     n = len(res);
