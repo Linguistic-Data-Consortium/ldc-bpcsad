@@ -23,7 +23,9 @@ def write_label_file(fn, segs, in_sec=True):
             if not in_sec:
                 onset = seconds_2_htk_units(onset);
                 offset = seconds_2_htk_units(offset);
-            f.write('%.2f %.2f %s\n' % (onset, offset, label));
+                f.write('%d %d %s\n' % (onset, offset, label));
+            else:
+                f.write('%.2f %.2f %s\n' % (onset, offset, label));
 
 
 def htk_units_2_seconds(t):

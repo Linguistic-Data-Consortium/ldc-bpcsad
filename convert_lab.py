@@ -4,7 +4,8 @@ import argparse;
 import os;
 import sys;
 
-from segs import read_label_file, seconds_2_htk_units;
+from segs import read_label_file, write_label_file;
+
 
 ##########################
 # Functions
@@ -12,11 +13,7 @@ from segs import read_label_file, seconds_2_htk_units;
 def write_htk(segs, lf):
     """
     """
-    with open(lf, 'w') as f:
-        for onset, offset, label in segs:
-            onset = seconds_2_htk_units(onset);
-            offset = seconds_2_htk_units(offset);
-            f.write('%d %d %s\n' % (onset, offset, label));
+    write_label_file(lf, segs, in_sec=False);
 
 
 def write_tdf(segs, lf):
