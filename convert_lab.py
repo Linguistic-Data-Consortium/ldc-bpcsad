@@ -19,7 +19,7 @@ def write_htk(segs, lf):
 def write_tdf(segs, lf):
     with open(lf, 'w') as f:
         # write header
-        headerCats = ['file;unicode',
+        header_cats = ['file;unicode',
                       'channel;int',
                       'start;float',
                       'end;float',
@@ -33,7 +33,7 @@ def write_tdf(segs, lf):
                       'sectionType;unicode',
                       'suType;unicode',
                      ];
-        f.write('%s\r\n' % '\t'.join(headerCats));
+        f.write('%s\r\n' % '\t'.join(header_cats));
         f.write(';;MM sectionTypes\t[None, None]\r\n');
         f.write(';;MM sectionBoundaries\t[0.0, 9999999.0]\r\n');
 
