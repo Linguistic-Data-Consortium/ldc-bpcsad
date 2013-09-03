@@ -4,20 +4,25 @@ import argparse;
 import os;
 import sys;
 
+from joblib import Parallel, delayed;
+
 from segs import read_label_file, write_label_file;
 
 
 ##########################
 # Functions
 ##########################
-def write_htk(segs, lf):
+def write_htk(olf, nlf):
     """
     """
-    write_label_file(lf, segs, in_sec=False);
+    segs = read_label_file(olf);
+    write_label_file(nlf, segs, in_sec=False);
 
 
-def write_tdf(segs, lf):
-    with open(lf, 'w') as f:
+def write_tdf(olf, nlf):
+    with open(nlf, 'w') as f:
+        segs = read_label_file(olf);
+
         # write header
         header_cats = ['file;unicode',
                       'channel;int',
@@ -38,7 +43,7 @@ def write_tdf(segs, lf):
         f.write(';;MM sectionBoundaries\t[0.0, 9999999.0]\r\n');
 
         # write speech segs
-        uid = os.path.splitext(os.path.basename(lf))[0];
+        uid = os.path.splitext(os.path.basename(nlf))[0];
         nsegs = 0;
         for onset, offset, label in segs:
             if label != 'spch':
@@ -61,11 +66,13 @@ def write_tdf(segs, lf):
             f.write('%s\r\n' % '\t'.join(fields));
                       
                       
-def write_tg(segs, lf):
+def write_tg(olf, nlf):
     """
     """
-    utt_dur = segs[-1][1];
-    with open(lf, 'w') as f:
+    with open(nlf, 'w') as f:
+        segs = read_label_file(olf);
+        utt_dur = segs[-1][1];
+
         # write file and tier headers
         f.write('File type = "ooTextFile"\n');
         f.write('Object class = "TextGrid"\n');
@@ -119,26 +126,33 @@ if __name__ == '__main__':
                                   ],
                         metavar='fmt', dest='fmt',
                         help='Set output file format (default: %(default)s)');
-
+    parser.add_argument('-j', nargs='?', default=1, type=int,
+                        metavar='n', dest='n_jobs',
+                        help='Set num threads to use (default: 1)');
     args = parser.parse_args();
 
     if len(sys.argv) == 1:
         parser.print_help();
 
-    # determine wfs
+    # determine lfs
     if not args.scpf is None:
         with open(args.scpf, 'r') as f:
             args.lfs = [l.strip() for l in f];
 
+    # determine label files
+    bns = [os.path.basename(lf) for lf in args.lfs];
+    uids = [os.path.splitext(bn)[0] for bn in bns];
+    nlfs = [os.path.join(args.lab_dir, '%s.%s' % (uid, args.ext)) for uid in uids];
+
+    # set num threads                                                           
+    n_jobs = min(len(args.lfs), args.n_jobs);
+
     # process
-    for lf in args.lfs:
-        segs = read_label_file(lf);
-        bn = os.path.basename(lf);
-        uid = os.path.splitext(bn)[0];
-        nlf = os.path.join(args.lab_dir, '%s.%s' % (uid, args.ext));
-        if args.fmt == 'htk':
-            write_htk(segs, nlf);
-        elif args.fmt == 'tdf':
-            write_tdf(segs, nlf);
-        elif args.fmt == 'tg':
-            write_tg(segs, nlf);
+    if args.fmt == 'htk':
+        f = delayed(write_htk);
+    elif args.fmt == 'tdf':
+        f = delayed(write_tdf);
+    elif args.fmt == 'tg':
+        f = delayed(write_tg);
+    Parallel(n_jobs=n_jobs, verbose=0)(f(args.lfs[ii], 
+                                         nlfs[ii]) for ii in xrange(len(nlfs)));
