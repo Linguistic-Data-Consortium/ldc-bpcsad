@@ -36,3 +36,44 @@ def seconds_2_htk_units(t):
     """Convert from seconds to 100ns units, rounded down to nearest integer.
     """
     return int(t*10**7);
+
+
+def merge_segs(segs):
+    """Merge sequences of segments with same label.
+    """
+    new_segs = [];
+    while len(segs) > 1:
+        curr = segs.pop();
+        prev = segs.pop();
+        if curr[-1] == prev[-1]:
+            new = [prev[0], curr[1], curr[-1]];
+            segs.append(new);
+        else:
+            segs.append(prev);
+            new_segs.append(curr);
+    new_segs.append(segs.pop());
+    new_segs.reverse();
+    return new_segs;
+
+
+def elim_short_segs(segs, target_lab='nonspch', replace_lab='spch',
+                    min_dur=0.300):
+    """Convert nonspeech segments below specified duration to
+    speech.
+
+    Inputs:
+        segs:
+
+        targetLab:
+
+        replaceLab:
+
+        minDur:    cutoff to reognize nonspeech seg.
+                   (default: 0.300 [NIST standard])
+    """
+    for seg in segs:
+        onset, offset, label = seg;
+        dur = offset - onset;
+        if label == target_lab and dur < min_dur:
+            seg[-1] = replace_lab;
+    return segs;
