@@ -15,16 +15,16 @@ from segs import read_label_file, write_label_file;
 ##########################
 # Functions
 ##########################
-def segment_file(af, labDir, ext):
+def segment_file(af, lab_dir, ext):
     """
     """
     # create tempdir for processing
-    tmpDir = tempfile.mkdtemp();
+    tmp_dir = tempfile.mkdtemp();
 
     # convert to 16 kHz wav
     bn = os.path.basename(af);
     uid = os.path.splitext(bn)[0];
-    wf = os.path.join(tmpDir, '%s.wav' % uid);
+    wf = os.path.join(tmp_dir, '%s.wav' % uid);
 
     with open(os.devnull, 'wb') as f:
         cmd = ['sox', af, '-r', '16000', wf];
@@ -33,39 +33,39 @@ def segment_file(af, labDir, ext):
     # perform sad
     cmd = ['HVite',
            '-T', '0',
-           '-w', os.path.join(scriptDir, 'phone_net'),
-           '-l', tmpDir,
-           '-H', os.path.join(scriptDir, 'model', 'macros'),
-           '-H', os.path.join(scriptDir, 'model', 'hmmdefs_temp'),
-           '-C', os.path.join(scriptDir, 'model', 'config'),
+           '-w', os.path.join(script_dir, 'phone_net'),
+           '-l', tmp_dir,
+           '-H', os.path.join(script_dir, 'model', 'macros'),
+           '-H', os.path.join(script_dir, 'model', 'hmmdefs_temp'),
+           '-C', os.path.join(script_dir, 'model', 'config'),
            '-p', '-0.3',
            '-s', '5.0',
            '-y', ext,
-           os.path.join(scriptDir, 'dict'),
-           os.path.join(scriptDir, 'monophones'),
+           os.path.join(script_dir, 'dict'),
+           os.path.join(script_dir, 'monophones'),
            wf,
            ];
     with open(os.devnull, 'wb') as f:
         subprocess.call(cmd, stdout=f, stderr=f);
 
     # merge segs
-    olf = os.path.join(tmpDir, '%s.%s' % (uid, ext));
-    nlf = os.path.join(labDir, '%s.%s' % (uid, ext));
+    olf = os.path.join(tmp_dir, '%s.%s' % (uid, ext));
+    nlf = os.path.join(lab_dir, '%s.%s' % (uid, ext));
 
     try:
-        segs = read_label_file(olf, inHTKUnits=True);
+        segs = read_label_file(olf, in_sec=False);
         segs = merge_segs(segs);
-        segs = elim_short_segs(segs, targetLab='nonspch', replaceLab='spch',
-                           minDur=args.minNonSpeechDur);
+        segs = elim_short_segs(segs, target_lab='nonspch', replace_lab='spch',
+                               min_dur=args.min_nonspeech_dur);
         segs = merge_segs(segs);
-        segs = elim_short_segs(segs, targetLab='spch', replaceLab='nonspch',
-                               minDur=args.minSpeechDur);
+        segs = elim_short_segs(segs, target_lab='spch', replace_lab='nonspch',
+                               min_dur=args.min_speech_dur);
         segs = merge_segs(segs);
         write_label_file(nlf, segs);
     except IOError:
         return af;
     finally:
-        shutil.rmtree(tmpDir);
+        shutil.rmtree(tmp_dir);
 
 
 def write_hmmdefs(oldf, newf, speech_scale_factor=1):
@@ -93,7 +93,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
 def merge_segs(segs):
     """Merge sequences of segments with same label.
     """
-    newSegs = [];
+    new_segs = [];
     while len(segs) > 1:
         curr = segs.pop();
         prev = segs.pop();
@@ -102,14 +102,14 @@ def merge_segs(segs):
             segs.append(new);
         else:
             segs.append(prev);
-            newSegs.append(curr);
-    newSegs.append(segs.pop());
-    newSegs.reverse();
-    return newSegs;
+            new_segs.append(curr);
+    new_segs.append(segs.pop());
+    new_segs.reverse();
+    return new_segs;
 
 
-def elim_short_segs(segs, targetLab='nonspch', replaceLab='spch',
-                    minDur=0.300):
+def elim_short_segs(segs, target_lab='nonspch', replace_lab='spch',
+                    min_dur=0.300):
     """Convert nonspeech segments below specified duration to
     speech.
 
@@ -126,8 +126,8 @@ def elim_short_segs(segs, targetLab='nonspch', replaceLab='spch',
     for seg in segs:
         onset, offset, label = seg;
         dur = offset - onset;
-        if label == targetLab and dur < minDur:
-            seg[-1] = replaceLab;
+        if label == target_lab and dur < min_dur:
+            seg[-1] = replace_lab;
     return segs;
 
 
@@ -135,7 +135,7 @@ def elim_short_segs(segs, targetLab='nonspch', replaceLab='spch',
 # Ye olde' main
 ##########################
 if __name__ == '__main__':
-    scriptDir = os.path.dirname(__file__);
+    script_dir = os.path.dirname(__file__);
 
     # parse command line args
     parser = argparse.ArgumentParser(description='Perform speech activity detection on single-channel audio files.', 
@@ -144,10 +144,10 @@ if __name__ == '__main__':
     parser.add_argument('afs', nargs='*',
                         help='audio files to be processed');
     parser.add_argument('-S', nargs='?', default=None,
-                        metavar='f', dest='scpPath',
+                        metavar='f', dest='scpf',
                         help='Set script file (default: none)');
     parser.add_argument('-L', nargs='?', default='./',
-                        metavar='dir', dest='labDir',
+                        metavar='dir', dest='lab_dir',
                         help="Set output label dir (default: current)");
     parser.add_argument('-X', nargs='?', default='lab',
                         metavar='ext', dest='ext',
@@ -156,13 +156,13 @@ if __name__ == '__main__':
                         metavar='k', dest='speech_scale_factor',
                         help='Set speech scale factor. This factor post-multiplies the speech model acoustic likelihoods. (default: 1)');
     parser.add_argument('--spch', nargs='?', default=0.500, type=float,
-                        metavar='tsec', dest='minSpeechDur',
+                        metavar='tsec', dest='min_speech_dur',
                         help='Set min speech dur (default: 0.5 s)');
     parser.add_argument('--nonspch', nargs='?', default=0.300, type=float,
-                        metavar='tsec', dest='minNonSpeechDur',
+                        metavar='tsec', dest='min_nonspeech_dur',
                         help='Set min nonspeech dur (default: 0.3 s)');
     parser.add_argument('-j', nargs='?', default=1, type=int,
-                        metavar='n', dest='maxThreads',
+                        metavar='n', dest='n_jobs',
                         help='Set num threads to use (default: 1)');
     args = parser.parse_args();
 
@@ -171,20 +171,21 @@ if __name__ == '__main__':
         sys.exit(1);
 
     # determine wfs to process
-    if args.scpPath:
-        with open(args.scpPath, 'r') as f:
+    if not args.scpf is None:
+        with open(args.scpf, 'r') as f:
             args.afs = [l.strip() for l in f.readlines()];
 
     # set num threads
-    numThreads = min(len(args.afs), args.maxThreads);
+    n_jobs = min(len(args.afs), args.n_jobs);
 
     # write temporary hmmdefs file
-    old_hmmdefs = os.path.join(scriptDir, 'model', 'hmmdefs');
-    new_hmmdefs = os.path.join(scriptDir, 'model', 'hmmdefs_temp');
+    old_hmmdefs = os.path.join(script_dir, 'model', 'hmmdefs');
+    new_hmmdefs = os.path.join(script_dir, 'model', 'hmmdefs_temp');
     write_hmmdefs(old_hmmdefs, new_hmmdefs, args.speech_scale_factor);
 
     # perform SAD
-    res = Parallel(n_jobs=numThreads, verbose=0)(delayed(segment_file)(af, args.labDir, args.ext) for af in args.afs);
+    f = delayed(segment_file);
+    res = Parallel(n_jobs=n_jobs, verbose=0)(f(af, args.lab_dir, args.ext) for af in args.afs);
     
     # remove temporary hmmdefs file
     os.remove(new_hmmdefs);
@@ -192,10 +193,10 @@ if __name__ == '__main__':
     # print failures
     failures = [r for r in res if r];
     n = len(res);
-    nFail = len(failures);
-    nSucc = n - len(failures);
-    print('%s out of %s files successfully segmented.' % (nSucc, n));
-    if nFail > 0:
+    n_fail = len(failures);
+    n_succ = n - len(failures);
+    print('%s out of %s files successfully segmented.' % (n_succ, n));
+    if n_fail > 0:
         print('There were errors with the following files.');
         for af in failures:
             print(af);
