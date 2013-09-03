@@ -48,7 +48,7 @@ def write_tdf(segs, lf):
                 continue;
             nsegs += 1;
             fields = [uid,
-                      '1',
+                      '0',
                       str(onset),
                       str(offset),
                       'speaker',
@@ -57,7 +57,7 @@ def write_tdf(segs, lf):
                       'speech',
                       '0',
                       '0',
-                      str(nsegs),
+                      str(nsegs-1),
                       '',
                       '',
                      ];
@@ -78,10 +78,10 @@ if __name__ == '__main__':
     parser.add_argument('lfs', nargs='*',
                         help='lab files to be processed');
     parser.add_argument('-S', nargs='?', default=None,
-                        metavar='f', dest='scpPath',
+                        metavar='f', dest='scpf',
                         help='Set script file (default: none)');
     parser.add_argument('-L', nargs='?', default='./',
-                        metavar='dir', dest='labDir',
+                        metavar='dir', dest='lab_dir',
                         help="Set output label dir (default: current)");
     parser.add_argument('-X', nargs='?', default='lab',
                         metavar='ext', dest='ext',
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                                    'tdf',
                                   ],
                         metavar='fmt', dest='fmt',
-                        help='Set output file formatq (default: %(default)s)');
+                        help='Set output file format (default: %(default)s)');
 
     args = parser.parse_args();
 
@@ -99,8 +99,8 @@ if __name__ == '__main__':
         parser.print_help();
 
     # determine wfs
-    if args.scpPath:
-        with open(args.scpPath, 'r') as f:
+    if not args.scpf is None:
+        with open(args.scpf, 'r') as f:
             args.lfs = [l.strip() for l in f];
 
     # process
@@ -108,7 +108,7 @@ if __name__ == '__main__':
         segs = read_label_file(lf);
         bn = os.path.basename(lf);
         uid = os.path.splitext(bn)[0];
-        nlf = os.path.join(args.labDir, '%s.%s' % (uid, args.ext));
+        nlf = os.path.join(args.lab_dir, '%s.%s' % (uid, args.ext));
         if args.fmt == 'htk':
             write_htk(segs, nlf);
         elif args.fmt == 'tdf':
