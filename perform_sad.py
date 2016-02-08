@@ -15,8 +15,41 @@ from segs import read_label_file, write_label_file, merge_segs, elim_short_segs
 ##########################
 # Functions
 ##########################
-def segment_file(af, lab_dir, ext):
-    """
+class HTKConfig(object):
+    def __init__(self, phone_net_fn, macros_fn, hmmdefs_fn, config_fn,
+                 dict_fn, monophones_fn):
+
+        self.__dict__.update(locals())
+        del self.self
+
+
+def segment_file(af, lab_dir, ext, htk_config):
+    """Perform speech activity detection on a single audio file.
+
+    The resulting segmentation will be saved in an HTK label file in
+    ``lab_dir`` with the same name as ``af`` but file extension ``ext``.
+    For instance, ``segment_file('A.wav', 'results', '.lab', htk_config)``
+    will create a file ``results/A.lab`` containing the segmentation.
+
+    Parameters
+    ----------
+    af : str
+        Path to audio file on which SAD is to be run.
+
+    lab_dir : str
+        Path to output directory for label file.
+
+    ext : str
+        File extension to use for label file.
+
+    htk_config : HTKConfig
+        HTK configuration.
+
+    Returns
+    -------
+    result : str
+        If segmentation is successful then ``result=None``. If it fails then
+        ``result=af``.
     """
     # create tempdir for processing
     tmp_dir = tempfile.mkdtemp()
@@ -33,24 +66,24 @@ def segment_file(af, lab_dir, ext):
     # perform sad
     cmd = ['HVite',
            '-T', '0',
-           '-w', os.path.join(script_dir, 'phone_net'),
+           '-w', htk_config.phone_net_fn,
            '-l', tmp_dir,
-           '-H', os.path.join(script_dir, 'model', 'macros'),
-           '-H', os.path.join(script_dir, 'model', 'hmmdefs_temp'),
-           '-C', os.path.join(script_dir, 'model', 'config'),
+           '-H', htk_config.macros_fn,
+           '-H', htk_config.hmmdefs_fn,
+           '-C', htk_config.config_fn,
            '-p', '-0.3',
            '-s', '5.0',
            '-y', ext,
-           os.path.join(script_dir, 'dict'),
-           os.path.join(script_dir, 'monophones'),
+           htk_config.dict_fn,
+           htk_config.monophones_fn,
            wf,
            ]
     with open(os.devnull, 'wb') as f:
         subprocess.call(cmd, stdout=f, stderr=f)
 
     # merge segs
-    olf = os.path.join(tmp_dir, '%s.%s' % (uid, ext))
-    nlf = os.path.join(lab_dir, '%s.%s' % (uid, ext))
+    olf = os.path.join(tmp_dir, '%s%s' % (uid, ext))
+    nlf = os.path.join(lab_dir, '%s%s' % (uid, ext))
 
     try:
         segs = read_label_file(olf, in_sec=False)
@@ -69,7 +102,23 @@ def segment_file(af, lab_dir, ext):
 
 
 def write_hmmdefs(oldf, newf, speech_scale_factor=1):
-    """
+    """Modify an HTK hmmdefs file in which speech model acoustic likelihoods
+    are scaled by ``speech_scale_factor``.
+
+    Parameters
+    ----------
+    oldf : str
+        Path to original HTK hmmdefs file.
+
+    newf : str
+        Path for modified HTK hmmdefs file. If ``newf`` allready exists, it
+        will be overwritten.
+
+    speech_scale_factor : float, optional
+        Factor by which speech model acoustic likelihoods are scaled prior to
+        beam search. Larger values will bias the SAD engine in favour of more
+        speech segments.        
+        (Default: 1)
     """
     with open(oldf, 'r') as f:
         lines = f.readlines()
@@ -109,9 +158,9 @@ if __name__ == '__main__':
     parser.add_argument('-L', nargs='?', default='./',
                         metavar='dir', dest='lab_dir',
                         help="Set output label dir (default: current)")
-    parser.add_argument('-X', nargs='?', default='lab',
+    parser.add_argument('-X', nargs='?', default='.lab',
                         metavar='ext', dest='ext',
-                        help="Set output label file extension (default: lab)")
+                        help="Set output label file extension (default: .lab)")
     parser.add_argument('-a', nargs='?', default=1, type=float,
                         metavar='k', dest='speech_scale_factor',
                         help='Set speech scale factor. This factor post-multiplies the speech model acoustic likelihoods. (default: 1)')
@@ -139,16 +188,25 @@ if __name__ == '__main__':
     n_jobs = min(len(args.afs), args.n_jobs)
 
     # write temporary hmmdefs file
-    old_hmmdefs = os.path.join(script_dir, 'model', 'hmmdefs')
-    new_hmmdefs = tempfile.mktemp()
-    write_hmmdefs(old_hmmdefs, new_hmmdefs, args.speech_scale_factor)
+    old_hmmdefs_fn = os.path.join(script_dir, 'model', 'hmmdefs')
+    new_hmmdefs_fn = tempfile.mktemp()
+    write_hmmdefs(old_hmmdefs_fn, new_hmmdefs_fn, args.speech_scale_factor)
 
-    # perform SAD
+    # Perform SAD on files in parallel.
+    htk_config = HTKConfig(os.path.join(script_dir, 'phone_net'),
+                           os.path.join(script_dir, 'model', 'macros'),
+                           new_hmmdefs_fn,
+                           os.path.join(script_dir, 'model', 'config'),
+                           os.path.join(script_dir, 'dict'),
+                           os.path.join(script_dir, 'monophones'))
     f = delayed(segment_file)
-    res = Parallel(n_jobs=n_jobs, verbose=0)(f(af, args.lab_dir, args.ext) for af in args.afs)
+    res = Parallel(n_jobs=n_jobs, verbose=0)(f(af,
+                                               args.lab_dir,
+                                               args.ext,
+                                               htk_config) for af in args.afs)
     
     # remove temporary hmmdefs file
-    os.remove(new_hmmdefs)
+    os.remove(new_hmmdefs_fn)
 
     # print failures
     failures = [r for r in res if r]
