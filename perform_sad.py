@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import argparse
 from math import log
 import os
@@ -8,13 +7,13 @@ import subprocess
 import sys
 import tempfile
 
-from joblib.parallel import Parallel, delayed
-from segs import read_label_file, write_label_file, merge_segs, elim_short_segs
+from joblib.parallel import delayed, Parallel
+from segs import (elim_short_segs, merge_segs, read_label_file,
+                  write_label_file)
+
+__all__ = ['segment_file', 'write_hmmdefs', 'HTKConfig']
 
 
-##########################
-# Functions
-##########################
 class HTKConfig(object):
     def __init__(self, phone_net_fn, macros_fn, hmmdefs_fn, config_fn,
                  dict_fn, monophones_fn):
@@ -51,19 +50,26 @@ def segment_file(af, lab_dir, ext, htk_config):
         If segmentation is successful then ``result=None``. If it fails then
         ``result=af``.
     """
-    # create tempdir for processing
+    # Create directory to hold intermediate segmentations.
     tmp_dir = tempfile.mkdtemp()
 
-    # convert to 16 kHz wav
+    # Convert to 16 kHz monochannel WAV using SoX.
     bn = os.path.basename(af)
     uid = os.path.splitext(bn)[0]
     wf = os.path.join(tmp_dir, '%s.wav' % uid)
-
     with open(os.devnull, 'wb') as f:
-        cmd = ['sox', af, '-r', '16000', wf]
+        cmd = ['sox', af,
+               '-r', '16000', # Resample to 16 kHz.
+               '-b', '16', # Make 16-bit.
+               '-e', 'signed-integer', # Linear PCM.
+               '-t', 'wav', # Write wav header.
+               wf,
+               'remix', '1', # Make monochannel.
+               ]
         subprocess.call(cmd, stdout=f, stderr=f)
 
-    # perform sad
+    # Perform SAD using HTK. This command both extracts the features and
+    # performs decoding.
     cmd = ['HVite',
            '-T', '0',
            '-w', htk_config.phone_net_fn,
@@ -73,7 +79,7 @@ def segment_file(af, lab_dir, ext, htk_config):
            '-C', htk_config.config_fn,
            '-p', '-0.3',
            '-s', '5.0',
-           '-y', ext,
+           '-y', ext.lstrip('.'),
            htk_config.dict_fn,
            htk_config.monophones_fn,
            wf,
@@ -81,10 +87,9 @@ def segment_file(af, lab_dir, ext, htk_config):
     with open(os.devnull, 'wb') as f:
         subprocess.call(cmd, stdout=f, stderr=f)
 
-    # merge segs
+    # Merge segments.
     olf = os.path.join(tmp_dir, '%s%s' % (uid, ext))
     nlf = os.path.join(lab_dir, '%s%s' % (uid, ext))
-
     try:
         segs = read_label_file(olf, in_sec=False)
         segs = merge_segs(segs)
@@ -120,20 +125,19 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
         speech segments.        
         (Default: 1)
     """
-    with open(oldf, 'r') as f:
+    with open(oldf, 'rb') as f:
         lines = f.readlines()
 
-    with open(newf, 'w') as g:
-        g.writelines(lines[:3]) # header
+    with open(newf, 'wb') as g:
+        g.writelines(lines[:3]) # Header.
         curr_phone = None
         for line in lines[3:]:
-            # keep track of which model we are dealing with
+            # Keep track of which model we are dealing with.
             if line.startswith('~h'):
                 curr_phone = line[3:].strip('\"\n')
-            # modify GCONST only for mixtures of speech models
+            # Modify GCONST only for mixtures of speech models.
             if line.startswith('<GCONST>') and curr_phone != 'nonspch':
                 gconst = float(line[9:-1])
-                #print speech_scale_factor
                 gconst += log(speech_scale_factor)
                 line = '<GCONST> %.6e\n' % gconst
             g.write(line)
@@ -146,7 +150,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
 if __name__ == '__main__':
     script_dir = os.path.dirname(__file__)
 
-    # parse command line args
+    # Parse command line args.
     parser = argparse.ArgumentParser(description='Perform speech activity detection on single-channel audio files.', 
                                      add_help=False,
                                      usage='%(prog)s [options] wfs')
@@ -179,15 +183,15 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
 
-    # determine wfs to process
+    # Determine wfs to process.
     if not args.scpf is None:
-        with open(args.scpf, 'r') as f:
+        with open(args.scpf, 'rb') as f:
             args.afs = [l.strip() for l in f.readlines()]
 
-    # set num threads
+    # Set num threads.
     n_jobs = min(len(args.afs), args.n_jobs)
 
-    # write temporary hmmdefs file
+    # Write temporary hmmdefs file.
     old_hmmdefs_fn = os.path.join(script_dir, 'model', 'hmmdefs')
     new_hmmdefs_fn = tempfile.mktemp()
     write_hmmdefs(old_hmmdefs_fn, new_hmmdefs_fn, args.speech_scale_factor)
@@ -205,10 +209,10 @@ if __name__ == '__main__':
                                                args.ext,
                                                htk_config) for af in args.afs)
     
-    # remove temporary hmmdefs file
+    # Remove temporary hmmdefs file.
     os.remove(new_hmmdefs_fn)
 
-    # print failures
+    # Print failures.
     failures = [r for r in res if r]
     n = len(res)
     n_fail = len(failures)
