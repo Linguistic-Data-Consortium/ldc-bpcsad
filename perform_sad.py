@@ -140,7 +140,7 @@ if __name__ == '__main__':
 
     # write temporary hmmdefs file
     old_hmmdefs = os.path.join(script_dir, 'model', 'hmmdefs');
-    new_hmmdefs = os.path.join(script_dir, 'model', 'hmmdefs_temp');
+    new_hmmdefs = tempfile.mktemp();
     write_hmmdefs(old_hmmdefs, new_hmmdefs, args.speech_scale_factor);
 
     # perform SAD
