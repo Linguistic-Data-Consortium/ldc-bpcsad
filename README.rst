@@ -61,14 +61,15 @@ a recording, try the following:
 
 i) Check that the path to the audio file is correct.
 
-ii) Check that the audio file is in a format that SOX accepts:: 
+ii) Check that the audio file is in a format that SOX accepts::
 
-    http://sox.sourceforge.net/soxformat.html.
+        http://sox.sourceforge.net/soxformat.html.
 
 iii) Try splitting the recording into a number of shorter recordings. For very,
-very long recordings (on the order of an hour or longer), Viterbi decoding may
-fail. If this happens, the best solution is to manually split the recording
-into  two or more shorter files, each less than an hour in length.
+     very long recordings (on the order of an hour or longer), Viterbi
+     decoding may fail. If this happens, the best solution is to manually
+     split the recording into  two or more shorter files, each less than an
+     hour in length.
 
 
 III. convert_lab.py
