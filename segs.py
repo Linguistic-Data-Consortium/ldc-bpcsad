@@ -1,9 +1,36 @@
-def read_label_file(lf, in_sec=True):
-    """
-    """
-    with open(lf, 'r') as f:
-        segs = [line.strip().split()[:3] for line in f]
+from __future__ import unicode_literals
 
+__all__ = ['elim_short_segs', 'merge_segs', 'read_label_file',
+           'write_label_file']
+
+
+def read_label_file(lf, in_sec=True, enc='utf-8'):
+    """Read segmentation from HTK label file.
+
+    Parameters
+    ----------
+    lf : str
+        Path to label file.
+
+    in_sec : bool, optional
+        If True then onsets/offsets in ``lf`` are assumed to be in seconds. If
+        False they are assumed to be in HTK 100 ns units.
+        (Default: True)
+
+    enc : str, optional
+        Character encoding of ``lf``.
+        (Default: 'utf-8')
+
+    Returns
+    -------
+    segs : list of tuple
+        List of segments, each expressed as a tuple
+        (``onset``, ``offset``, ``label``), where ``onset`` and ``offset`` are
+        the onset and offset of the segment in seconds relative to the start
+        of the recording.
+    """
+    with open(lf, 'rb') as f:
+        segs = [line.decode(enc).strip().split()[:3] for line in f]
 
     for seg in segs:
         seg[0] = float(seg[0])
@@ -15,17 +42,38 @@ def read_label_file(lf, in_sec=True):
     return segs
 
 
-def write_label_file(fn, segs, in_sec=True):
+def write_label_file(lf, segs, in_sec=True, enc='utf-8'):
+    """Write segmentation to HTK label file.
+
+    Parameters
+    ----------
+    lf : str
+        Path to label file.
+
+    segs : list of tuple
+        List of segments, each expressed as a tuple
+        (``onset``, ``offset``, ``label``), where ``onset`` and ``offset`` are
+        the onset and offset of the segment in seconds relative to the start
+        of the recording.
+
+    in_sec : bool, optional
+        If True then write onsets and offsets in terms of seconds. If False
+        then write in terms of HTK 100 ns units.
+        (Default: True)
+
+    enc : str, optional
+        Character encoding of ``lf``.
+        (Default: 'utf-8')
     """
-    """
-    with open(fn, 'w') as f:
+    with open(lf, 'wb') as f:
         for onset, offset, label in segs:
             if not in_sec:
                 onset = seconds_2_htk_units(onset)
                 offset = seconds_2_htk_units(offset)
-                f.write('%d %d %s\n' % (onset, offset, label))
+                line = '%d %d %s\n' % (onset, offset, label)
             else:
-                f.write('%.2f %.2f %s\n' % (onset, offset, label))
+                line = '%.2f %.2f %s\n' % (onset, offset, label)
+            f.write(line.encode(enc))
 
 
 def htk_units_2_seconds(t):
@@ -60,18 +108,34 @@ def merge_segs(segs):
 
 def elim_short_segs(segs, target_lab='nonspch', replace_lab='spch',
                     min_dur=0.300):
-    """Convert nonspeech segments below specified duration to
-    speech.
+    """Convert nonspeech segments below specified duration to speech.
 
-    Inputs:
-        segs:
+    Parameters
+    ----------
+    segs : list of tuple
+        List of segments, each expressed as a tuple
+        (``onset``, ``offset``, ``label``), where ``onset`` and ``offset`` are
+        the onset and offset of the segment in seconds relative to the start
+        of the recording.
 
-        targetLab:
+    target_lab : str, optional
+        Label of segments to filter.
+        (Default: 'nonspch')
 
-        replaceLab:
+    replace_lab : str, optional
+        Label to replace segments of type ``target_lab`` which fall below the
+        cutoff.
+        (Default: 'spch')
 
-        minDur:    cutoff to reognize nonspeech seg.
-                   (default: 0.300 [NIST standard])
+    min_dur : float, optional
+        Minimum allowed duration (seconds) for segments of type ``target_lab``.
+        Segments falling below ``min_dur`` will be remapped to ``replace_lab``.
+        Duration cutoff (seconds) below which
+        (Default: 0.300)
+
+    Returns
+    -------
+    new_segs
     """
     for seg in segs:
         onset, offset, label = seg
