@@ -1,44 +1,63 @@
-ldc_sad_hmm is a collection of utilities for speech/non-speech segmentation of audio recordings (aka, Speech Activity Detection (SAD)).
+``ldc_sad_hmm`` is a collection of utilities for speech/non-speech segmentation
+of audio recordings (aka, Speech Activity Detection (SAD)).
 
 
 I. Dependencies
 ---------------
 The following are required to run this software:
 
--python (2.6 or later)
--sox (14.4 or later; earlier versions may work but are untested)
--HTK 3.40 or later
+- python (2.7 or later)
+- sox (14.4 or later; earlier versions may work but are untested)
+- HTK 3.40 or later
 
-HTK can be obtained from http://htk.eng.cam.ac.uk/. Simply register, download, and compile. For optimal performance, we have found that compiling using -O3 and -ffast-math are helpful. You may need to disable X11 and HSLab support to get HTK to compile, which can be done by passing the following arguments to the configure script:
+HTK can be obtained from http://htk.eng.cam.ac.uk/. Simply register, download,
+and compile. For optimal performance, we have found that compiling using the
+flags ``-O3 -ffast-math`` is helpful. You may need to disable X11 and HSLab
+support to get HTK to compile, which can be done by passing the following
+arguments to the configure script::
 
-./configure --without-x --disable-hslab
+    ./configure --without-x --disable-hslab
 
 
 II. perform_sad.py
 -----------------
 a) Overview
 
-This utility performs SAD for mono-channel audio files with sampling rates >= 8000 Hz (while the detector will run on audio sampled at a lower frequency, the results will not be optimal). Most audio file formats are supported, with a complete list available at: http://sox.sourceforge.net/soxformat.html.
+This utility performs SAD for mono-channel audio files with sampling rates
+>= 8000 Hz (while the detector will run on audio sampled at a lower frequency,
+the results will not be optimal). Most audio file formats are supported, with
+a complete list available at: http://sox.sourceforge.net/soxformat.html.
 
 
 b) Usage
 
-From the command line, run
+From the command line, run::
 
-./perform_sad.py -L /path/to/outputDir af1 af2 af3 ...
+    ./perform_sad.py -L /path/to/out_dir af1 af2 af3 ...
 
-which will run SAD on the files af1, af2, af3, ..., outputting a label file for each in outputDir. The files may be specified individually via the command line, as above, or from a script file (containing one path per line) using the -S switch. Label files list the detected speech/non-speech segments on individual lines, with each line having the following format:
+which will run SAD on the files ``af1``, ``af2``, ``af3``, ..., outputting a
+label file for each in ``out_dir``. The files may be specified individually
+via the command line, as above, or from a script file (containing one path per
+line) using the ``-S`` switch. Label files list the detected speech/non-speech
+segments on individual lines, with each line having the following format::
 
-ONSET OFFSET LAB
+    ONSET OFFSET LAB
 
-where ONSET and OFFSET are the onset and offset of the segment in seconds and LAB is one of {spch, nonspch}.
+where ``ONSET`` and ``OFFSET`` are the onset and offset of the segment in
+seconds and ``LAB`` is one of {spch, nonspch}.
 
-Additional command-line switches exist to control the minimum duration for speech segments, the minimum duration for non-speech segments, the number of threads to use (if you have sufficient memory, a good rule of thumb is 1.5 times the number of logical cores), and the label file extension. For a listing of all options, run perform_sad.py without any arguments.
+Additional command-line switches exist to control the minimum duration for
+speech segments, the minimum duration for non-speech segments, the number of
+threads to use (if you have sufficient memory, a good rule of thumb is 1.5
+times the number of logical cores), and the label file extension. For a
+listing of all options, run perform_sad.py without any arguments.
 
 
 c) Troubleshooting
 
-After processing a bath of files, the utility will output the names of any files it has problems with. If you find yourself having trouble running SAD on a recording, try the following:
+After processing a bath of files, the utility will output the names of any
+files it has problems with. If you find yourself having trouble running SAD on
+a recording, try the following:
 
 i) Check that the path to the audio file is correct.
 
@@ -47,7 +66,10 @@ ii) Check that the audio file is in a format that SOX accepts:
 http://sox.sourceforge.net/soxformat.html.
 
 
-iii) Try splitting the recording into a number of shorter recordings. For very, very long recordings (on the order of an hour or longer), Viterbi decoding may fail. If this happens, the best solution is to manually split the recording into  two or more shorter files, each less than an hour in length.
+iii) Try splitting the recording into a number of shorter recordings. For very,
+very long recordings (on the order of an hour or longer), Viterbi decoding may
+fail. If this happens, the best solution is to manually split the recording
+into  two or more shorter files, each less than an hour in length.
 
 
 III. convert_lab.py
