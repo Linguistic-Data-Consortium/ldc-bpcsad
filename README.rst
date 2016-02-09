@@ -3,7 +3,7 @@ of audio recordings (aka, Speech Activity Detection (SAD)).
 
 
 I. Dependencies
----------------
+===============
 The following are required to run this software:
 
 - python (2.7 or later)
@@ -20,9 +20,9 @@ arguments to the configure script::
 
 
 II. perform_sad.py
------------------
+==================
 a) Overview
-
+-----------
 This utility performs SAD for mono-channel audio files with sampling rates
 >= 8000 Hz (while the detector will run on audio sampled at a lower frequency,
 the results will not be optimal). Most audio file formats are supported, with
@@ -30,7 +30,7 @@ a complete list available at: http://sox.sourceforge.net/soxformat.html.
 
 
 b) Usage
-
+--------
 From the command line, run::
 
     ./perform_sad.py -L /path/to/out_dir af1 af2 af3 ...
@@ -54,7 +54,7 @@ listing of all options, run perform_sad.py without any arguments.
 
 
 c) Troubleshooting
-
+------------------
 After processing a bath of files, the utility will output the names of any
 files it has problems with. If you find yourself having trouble running SAD on
 a recording, try the following:
@@ -73,6 +73,6 @@ into  two or more shorter files, each less than an hour in length.
 
 
 III. convert_lab.py
---------------------
-TO DO 
+===================
+TODO 
 
