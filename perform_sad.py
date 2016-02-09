@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from __future__ import unicode_literals
 import argparse
 from math import log
 import os
@@ -22,7 +24,7 @@ class HTKConfig(object):
         del self.self
 
 
-def segment_file(af, lab_dir, ext, htk_config):
+def segment_file(af, lab_dir, ext, htk_config, channel):
     """Perform speech activity detection on a single audio file.
 
     The resulting segmentation will be saved in an HTK label file in
@@ -44,6 +46,9 @@ def segment_file(af, lab_dir, ext, htk_config):
     htk_config : HTKConfig
         HTK configuration.
 
+    channel : int
+        Channel (1-indexed) to perform SAD on.
+
     Returns
     -------
     result : str
@@ -60,11 +65,11 @@ def segment_file(af, lab_dir, ext, htk_config):
     with open(os.devnull, 'wb') as f:
         cmd = ['sox', af,
                '-r', '16000', # Resample to 16 kHz.
-               '-b', '16', # Make 16-bit.
+                '-b', '16', # Make 16-bit.
                '-e', 'signed-integer', # Linear PCM.
                '-t', 'wav', # Write wav header.
                wf,
-               'remix', '1', # Make monochannel.
+               'remix', str(channel), # Keep single channel.
                ]
         subprocess.call(cmd, stdout=f, stderr=f)
 
@@ -174,6 +179,9 @@ if __name__ == '__main__':
     parser.add_argument('--nonspch', nargs='?', default=0.300, type=float,
                         metavar='tsec', dest='min_nonspeech_dur',
                         help='Set min nonspeech dur (default: 0.3 s)')
+    parser.add_argument('--channel', nargs='?', default=1, type=int,
+                        metavar='n', dest='channel',
+                        help='Channel (1-indexed) to use (default: 1)')
     parser.add_argument('-j', nargs='?', default=1, type=int,
                         metavar='n', dest='n_jobs',
                         help='Set num threads to use (default: 1)')
@@ -207,7 +215,8 @@ if __name__ == '__main__':
     res = Parallel(n_jobs=n_jobs, verbose=0)(f(af,
                                                args.lab_dir,
                                                args.ext,
-                                               htk_config) for af in args.afs)
+                                               htk_config,
+                                               args.channel) for af in args.afs)
     
     # Remove temporary hmmdefs file.
     os.remove(new_hmmdefs_fn)
