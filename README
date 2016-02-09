@@ -18,7 +18,7 @@ II. perform_sad.py
 -----------------
 a) Overview
 
-This utilitity performs SAD for mono-channel audio files with sampling rates >= 8000 Hz (while the detector will run on audio sampled at a lower frequency, the results will not be optimal). Most audio file formats are supported, with a complete list available at: http://sox.sourceforge.net/soxformat.html.
+This utility performs SAD for mono-channel audio files with sampling rates >= 8000 Hz (while the detector will run on audio sampled at a lower frequency, the results will not be optimal). Most audio file formats are supported, with a complete list available at: http://sox.sourceforge.net/soxformat.html.
 
 
 b) Usage
