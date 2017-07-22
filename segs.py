@@ -1,3 +1,7 @@
+# Copyright (c) 2012-2017, Trustees of the University of Pennsylvania
+# Authors: nryant@ldc.upenn.edu (Neville Ryant)
+# License: BSD 2-clause
+"""TODO"""
 from __future__ import unicode_literals
 
 __all__ = ['elim_short_segs', 'merge_segs', 'read_label_file',
