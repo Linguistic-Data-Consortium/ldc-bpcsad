@@ -98,11 +98,13 @@ def segment_file(af, lab_dir, ext, htk_config, channel):
     try:
         segs = read_label_file(olf, in_sec=False)
         segs = merge_segs(segs)
-        segs = elim_short_segs(segs, target_lab='nonspch', replace_lab='spch',
-                               min_dur=args.min_nonspeech_dur)
+        segs = elim_short_segs(
+            segs, target_lab='nonspeech', replace_lab='speech',
+            min_dur=args.min_nonspeech_dur)
         segs = merge_segs(segs)
-        segs = elim_short_segs(segs, target_lab='spch', replace_lab='nonspch',
-                               min_dur=args.min_speech_dur)
+        segs = elim_short_segs(
+            segs, target_lab='speech', replace_lab='nonspeech',
+            min_dur=args.min_speech_dur)
         segs = merge_segs(segs)
         write_label_file(nlf, segs)
     except IOError:
@@ -141,7 +143,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
             if line.startswith('~h'):
                 curr_phone = line[3:].strip('\"\n')
             # Modify GCONST only for mixtures of speech models.
-            if line.startswith('<GCONST>') and curr_phone != 'nonspch':
+            if line.startswith('<GCONST>') and curr_phone != 'nonspeech':
                 gconst = float(line[9:-1])
                 gconst += log(speech_scale_factor)
                 line = '<GCONST> %.6e\n' % gconst
@@ -173,10 +175,10 @@ if __name__ == '__main__':
     parser.add_argument('-a', nargs='?', default=1, type=float,
                         metavar='k', dest='speech_scale_factor',
                         help='Set speech scale factor. This factor post-multiplies the speech model acoustic likelihoods. (default: 1)')
-    parser.add_argument('--spch', nargs='?', default=0.500, type=float,
+    parser.add_argument('--speech', nargs='?', default=0.500, type=float,
                         metavar='tsec', dest='min_speech_dur',
                         help='Set min speech dur (default: 0.5 s)')
-    parser.add_argument('--nonspch', nargs='?', default=0.300, type=float,
+    parser.add_argument('--nonspeech', nargs='?', default=0.300, type=float,
                         metavar='tsec', dest='min_nonspeech_dur',
                         help='Set min nonspeech dur (default: 0.3 s)')
     parser.add_argument('--channel', nargs='?', default=1, type=int,

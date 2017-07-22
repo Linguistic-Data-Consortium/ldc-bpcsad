@@ -58,7 +58,7 @@ def write_tdf(olf, nlf):
         uid = os.path.splitext(os.path.basename(nlf))[0]
         nsegs = 0
         for onset, offset, label in segs:
-            if label != 'spch':
+            if label != 'speech':
                 continue
             nsegs += 1
             fields = [uid,

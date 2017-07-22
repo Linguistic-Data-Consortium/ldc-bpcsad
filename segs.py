@@ -106,7 +106,7 @@ def merge_segs(segs):
     return new_segs
 
 
-def elim_short_segs(segs, target_lab='nonspch', replace_lab='spch',
+def elim_short_segs(segs, target_lab='nonspeech', replace_lab='speech',
                     min_dur=0.300):
     """Convert nonspeech segments below specified duration to speech.
 
@@ -120,12 +120,12 @@ def elim_short_segs(segs, target_lab='nonspch', replace_lab='spch',
 
     target_lab : str, optional
         Label of segments to filter.
-        (Default: 'nonspch')
+        (Default: 'nonspeech')
 
     replace_lab : str, optional
         Label to replace segments of type ``target_lab`` which fall below the
         cutoff.
-        (Default: 'spch')
+        (Default: 'speech')
 
     min_dur : float, optional
         Minimum allowed duration (seconds) for segments of type ``target_lab``.
