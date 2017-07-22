@@ -14,8 +14,11 @@ import sys
 import tempfile
 
 from joblib.parallel import delayed, Parallel
+from seglib.logging import getLogger
 from seglib.segs import (elim_short_segs, merge_segs, read_label_file,
                          write_label_file)
+
+logger = getLogger()
 
 
 class HTKConfig(object):
@@ -49,12 +52,6 @@ def segment_file(af, lab_dir, ext, htk_config, channel):
 
     channel : int
         Channel (1-indexed) to perform SAD on.
-
-    Returns
-    -------
-    result : str
-        If segmentation is successful then ``result=None``. If it fails then
-        ``result=af``.
     """
     # Create directory to hold intermediate segmentations.
     tmp_dir = tempfile.mkdtemp()
@@ -109,7 +106,7 @@ def segment_file(af, lab_dir, ext, htk_config, channel):
         segs = merge_segs(segs)
         write_label_file(nlf, segs)
     except IOError:
-        return af
+        logger.warn('SAD failed for %s. Skipping.' % af)
     finally:
         shutil.rmtree(tmp_dir)
 
@@ -130,7 +127,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
     speech_scale_factor : float, optional
         Factor by which speech model acoustic likelihoods are scaled prior to
         beam search. Larger values will bias the SAD engine in favour of more
-        speech segments.        
+        speech segments.
         (Default: 1)
     """
     with open(oldf, 'rb') as f:
@@ -149,7 +146,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
                 gconst += log(speech_scale_factor)
                 line = '<GCONST> %.6e\n' % gconst
             g.write(line)
-                
+
 
 
 if __name__ == '__main__':
@@ -157,7 +154,7 @@ if __name__ == '__main__':
 
     # Parse command line args.
     parser = argparse.ArgumentParser(
-        description='Perform speech activity detection on audio files.', 
+        description='Perform speech activity detection on audio files.',
         add_help=True,
         usage='%(prog)s [options] [afs]')
     parser.add_argument(
@@ -219,19 +216,7 @@ if __name__ == '__main__':
     kwargs = dict(lab_dir=args.lab_dir, ext=args.ext, htk_config=htk_config,
                   channel=args.channel)
     f = delayed(segment_file)
-    res = Parallel(n_jobs=n_jobs, verbose=0)(f(af, **kwargs)
-                                             for af in args.afs)
-    
+    Parallel(n_jobs=n_jobs, verbose=0)(f(af, **kwargs) for af in args.afs)
+
     # Remove temporary hmmdefs file.
     os.remove(new_hmmdefs_fn)
-
-    # Print failures.
-    failures = [r for r in res if r]
-    n = len(res)
-    n_fail = len(failures)
-    n_succ = n - len(failures)
-    print('%s out of %s files successfully segmented.' % (n_succ, n))
-    if n_fail > 0:
-        print('There were errors with the following files.')
-        for af in failures:
-            print(af)
