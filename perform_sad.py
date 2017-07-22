@@ -2,6 +2,7 @@
 # Copyright (c) 2012-2017, Trustees of the University of Pennsylvania
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
+"""TODO"""
 from __future__ import print_function
 from __future__ import unicode_literals
 import argparse
@@ -13,16 +14,13 @@ import sys
 import tempfile
 
 from joblib.parallel import delayed, Parallel
-from segs import (elim_short_segs, merge_segs, read_label_file,
-                  write_label_file)
-
-__all__ = ['segment_file', 'write_hmmdefs', 'HTKConfig']
+from seglib.segs import (elim_short_segs, merge_segs, read_label_file,
+                         write_label_file)
 
 
 class HTKConfig(object):
     def __init__(self, phone_net_fn, macros_fn, hmmdefs_fn, config_fn,
                  dict_fn, monophones_fn):
-
         self.__dict__.update(locals())
         del self.self
 
@@ -154,57 +152,59 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
                 
 
 
-##########################
-# Ye olde' main
-##########################
 if __name__ == '__main__':
     script_dir = os.path.dirname(__file__)
 
     # Parse command line args.
-    parser = argparse.ArgumentParser(description='Perform speech activity detection on single-channel audio files.', 
-                                     add_help=False,
-                                     usage='%(prog)s [options] wfs')
-    parser.add_argument('afs', nargs='*',
-                        help='audio files to be processed')
-    parser.add_argument('-S', nargs='?', default=None,
-                        metavar='f', dest='scpf',
-                        help='Set script file (default: none)')
-    parser.add_argument('-L', nargs='?', default='./',
-                        metavar='dir', dest='lab_dir',
-                        help="Set output label dir (default: current)")
-    parser.add_argument('-X', nargs='?', default='.lab',
-                        metavar='ext', dest='ext',
-                        help="Set output label file extension (default: .lab)")
-    parser.add_argument('-a', nargs='?', default=1, type=float,
-                        metavar='k', dest='speech_scale_factor',
-                        help='Set speech scale factor. This factor post-multiplies the speech model acoustic likelihoods. (default: 1)')
-    parser.add_argument('--speech', nargs='?', default=0.500, type=float,
-                        metavar='tsec', dest='min_speech_dur',
-                        help='Set min speech dur (default: 0.5 s)')
-    parser.add_argument('--nonspeech', nargs='?', default=0.300, type=float,
-                        metavar='tsec', dest='min_nonspeech_dur',
-                        help='Set min nonspeech dur (default: 0.3 s)')
-    parser.add_argument('--channel', nargs='?', default=1, type=int,
-                        metavar='n', dest='channel',
-                        help='Channel (1-indexed) to use (default: 1)')
-    parser.add_argument('-j', nargs='?', default=1, type=int,
-                        metavar='n', dest='n_jobs',
-                        help='Set num threads to use (default: 1)')
-    args = parser.parse_args()
-
+    parser = argparse.ArgumentParser(
+        description='Perform speech activity detection on audio files.', 
+        add_help=True,
+        usage='%(prog)s [options] [afs]')
+    parser.add_argument(
+        'afs', nargs='*', help='audio files to be processed')
+    parser.add_argument(
+        '-S', nargs=None, default=None, metavar='STR', dest='scpf',
+        help='set script file (Default: %(default)s)')
+    parser.add_argument(
+        '-L', nargs=None, default='./', metavar='STR', dest='lab_dir',
+        help="set output label dir (Default: %(default)s)")
+    parser.add_argument(
+        '-X', nargs=None, default='.lab', metavar='STR', dest='ext',
+        help="set output label file extension (Default: %(default)s)")
+    parser.add_argument(
+        '-a', nargs=None, default=1., type=float, metavar='FLOAT',
+        dest='speech_scale_factor',
+        help='set speech scale factor. This factor post-multiplies the speech '
+             'model acoustic likelihoods. (Default: %(default)s)')
+    parser.add_argument(
+        '--speech', nargs=None, default=0.500, type=float, metavar='FLOAT',
+        dest='min_speech_dur',
+        help='set min speech dur in seconds (Default: %(default)s)')
+    parser.add_argument(
+        '--nonspeech', nargs=None, default=0.300, type=float, metavar='FLOAT',
+        dest='min_nonspeech_dur',
+        help='set min nonspeech duration in seconds (Default: %(default)s)')
+    parser.add_argument(
+        '--channel', nargs=None, default=1, type=int, metavar='INT',
+        dest='channel',
+        help='channel (1-indexed) to use (Default: %(default)s)')
+    parser.add_argument(
+        '-j', nargs=None, default=1, type=int, metavar='INT', dest='n_jobs',
+        help='set num threads to use (Default: %(default)s)')
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
+    args = parser.parse_args()
 
-    # Determine wfs to process.
+
+    n_jobs = min(len(args.afs), args.n_jobs)
+
+    # Load paths from script file.
     if not args.scpf is None:
         with open(args.scpf, 'rb') as f:
             args.afs = [l.strip() for l in f.readlines()]
 
-    # Set num threads.
-    n_jobs = min(len(args.afs), args.n_jobs)
-
-    # Write temporary hmmdefs file.
+    # Modify GMM weights to account for speech scale factor.
     old_hmmdefs_fn = os.path.join(script_dir, 'model', 'hmmdefs')
     new_hmmdefs_fn = tempfile.mktemp()
     write_hmmdefs(old_hmmdefs_fn, new_hmmdefs_fn, args.speech_scale_factor)
@@ -216,12 +216,11 @@ if __name__ == '__main__':
                            os.path.join(script_dir, 'model', 'config'),
                            os.path.join(script_dir, 'dict'),
                            os.path.join(script_dir, 'monophones'))
+    kwargs = dict(lab_dir=args.lab_dir, ext=args.ext, htk_config=htk_config,
+                  channel=args.channel)
     f = delayed(segment_file)
-    res = Parallel(n_jobs=n_jobs, verbose=0)(f(af,
-                                               args.lab_dir,
-                                               args.ext,
-                                               htk_config,
-                                               args.channel) for af in args.afs)
+    res = Parallel(n_jobs=n_jobs, verbose=0)(f(af, **kwargs)
+                                             for af in args.afs)
     
     # Remove temporary hmmdefs file.
     os.remove(new_hmmdefs_fn)

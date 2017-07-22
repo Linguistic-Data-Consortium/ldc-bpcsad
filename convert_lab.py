@@ -10,7 +10,7 @@ import sys
 
 from joblib import delayed, Parallel
 
-from segs import read_label_file, write_label_file
+from seglib.segs import read_label_file, write_label_file
 
 __all__ = ['write_htk', 'write_tdf', 'write_tg']
 
