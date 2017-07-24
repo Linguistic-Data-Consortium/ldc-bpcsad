@@ -2,7 +2,87 @@
 # Copyright (c) 2012-2017, Trustees of the University of Pennsylvania
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
-"""TODO"""
+"""Perform speech activity detection (SAD) using a GMM-HMM broad phonetic
+class recognizer.
+
+To perform SAD for a set of WAV files and store the segmentations in the
+directory ``label_dir``:
+
+    python perform_sad.py -L label_dir rec1.wav rec2.wav rec3.wav ...
+
+For each of the WAV files ``rec1.wav``, ``rec2.wav``, ``rec3.wav``, ... a
+corresponding label file (``rec1.lab``, ``rec2.lab``, etc) will be created in
+``label_dir``. Label files list the detected speech and non-speech segments
+with one segment per line, each line having the format:
+
+    ONSET OFFSET LAB
+
+where ``ONSET`` and ``OFFSET`` are the onset and offset of the segment in
+seconds and ``LAB`` is one of {speech, nonspeech}. By default these files
+will be output with the extension ``.lab``, though this may be changed via the
+``-X`` flag.
+
+Alternately, we could have specified the WAV files via a script file of paths
+(one per line) using the ``-S`` flag. For instance, assuming ``wav.scp``
+contains lines:
+
+    rec1.wav
+    rec2.wav
+    rec3.wav
+    .
+    .
+    .
+
+then the output of the following will be identical to the original command:
+
+    python perform_sad.py -S wav.scp -L label_dir
+
+**NOTE** that while the preceding examples illustrated SAD using audio in WAV
+format, other formats are supported:
+
+    python perform_sad.py -L label_dir rec1.flac rec2.wav rec3.sph ...
+
+Indeed, any audio file format handled by SoX will work, though the exact
+composition of this set will depend on your system's installation of SoX.
+For a full listing of supported  formats on your system, run ``sox`` from the
+command line without any arguments and check the ``AUDIO FILE FORMATS``
+section at the bottom.
+
+By default the segmenter post-processes the output to eliminate speech segments
+less than 500 ms in duration and nonspeech segments less than 300 ms in
+duration. While these defaults are suitable for SAD that is being done as a
+precursor to transcription by human annotators, they may be restrictive for
+other uses. If necessary, the minimum speech and nonspeech segment durations
+may be changed via the ``--speech`` and ``--nonspeech`` flags respectively.
+For instance, to instead use minimum durations of 250 ms for speech and 100 ms
+for nonspeech:
+
+    python perform_sad.py --speech 0.250 --nonspeech 0.100 \
+                          -L label_dir rec1.wav rec2.wav rec3.wav ...
+
+Tips
+----
+- If the corpus you wish to segment is exceptionally large, consider running
+  in multithreaded mode by setting ``-j n``, where ``n`` is some positive
+  integer. This will instruct the segmenter to partition the input recordings
+  into ``n`` sets, and run on the sets in parallel.
+- If your recordings are particularly sparse, you may wish to alter to
+  reweight the acoustic likelihoods so that speech segments are emphasized
+  relative to non-speech segments. To do this, use the ``-a`` flag, which
+  controls the scaling factor applied to speech model acoustic likelihoods
+  (default is 1).
+- For very long recordings (on the order of an hour or longer), Viterbi
+  decoding may fail. If this happens, the best solution is to manually split
+  the recording into  two or more shorter files, each less than an hour in
+  length.
+
+References
+----------
+Pitt, M. A., Dilley, L., Johnson, K., Kiesling, S., Raymond, W., Hume, E.,
+  and  Fosler-Lussier, E. (2007). Buckeye corpus of conversational speech (2nd
+  release). Columbus, OH: Department of Psychology, Ohio State University.
+  http://buckeyecorpus.osu.edu/
+"""
 from __future__ import print_function
 from __future__ import unicode_literals
 import argparse
