@@ -94,9 +94,10 @@ import sys
 import tempfile
 
 from joblib.parallel import delayed, Parallel
+
+from seglib.io import read_label_file, write_label_file
 from seglib.logging import getLogger
-from seglib.segs import (elim_short_segs, merge_segs, read_label_file,
-                         write_label_file)
+from seglib.utils import elim_short_segs, merge_segs
 
 logger = getLogger()
 

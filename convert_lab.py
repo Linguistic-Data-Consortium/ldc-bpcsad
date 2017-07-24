@@ -10,9 +10,53 @@ import sys
 
 from joblib import delayed, Parallel
 
-from seglib.segs import read_label_file, write_label_file
+from seglib.io import read_label_file, write_label_file
 
 __all__ = ['write_htk', 'write_tdf', 'write_tg']
+
+# TODO:
+#
+# - move IO to seglib/segs.py or seglib/io.py
+# - write functions:
+#   - write_opensad
+#   - write_htk
+#   - write_tdf
+#   - write_textgrid
+#
+# - each write function should have signature:
+#   fn(fn, segs, ...)
+#
+# -
+
+def write_opensad(fn, segs, test_set='test_set'):
+    """Write segments in format expected by NIST OpenSAD eval tool.
+
+    Parameters
+    ----------
+    fn : str
+
+    segs : list of tuple
+        Segments.
+
+    test_set : str, optional
+        Test set ID. This goes into column 2 of the NIST OpenSAD file.
+        (Default: 'test_set')
+    """
+    with open(fn, 'wb') as f:
+        bn = os.path.basename(fn)
+        fid = os.path.splitext(bn)[0]
+        for onset, offset, label in segs:
+            label = 'non-speech' if label == 'nonspeech' else label
+            cols = ['fake_testDef.xml', # Test Definition File.
+                    test_set, # TestSet ID.
+                    'test', # Test ID.
+                    'SAD', # Task.
+                    fid, # File ID.
+                    '%.3f' % onset, # Interval start (seconds).
+                    '%.3f' % offset, # Interval end (seconds).
+                    label, # Type (one of {speech, non-speech}).
+                    '0.5', # Confidence.
+            ]
 
 
 def write_htk(olf, nlf):
@@ -125,9 +169,10 @@ if __name__ == '__main__':
     script_dir = os.path.dirname(__file__)
 
     # Parse command line args.
-    parser = argparse.ArgumentParser(description='Convert format of SAD output.',
-                                     add_help=False,
-                                     usage='%(prog)s [options] lfs')
+    parser = argparse.ArgumentParser(
+        description='Convert format of SAD output.',
+        add_help=False,
+        usage='%(prog)s [options] lfs')
     parser.add_argument('lfs', nargs='*',
                         help='lab files to be processed')
     parser.add_argument('-S', nargs='?', default=None,
