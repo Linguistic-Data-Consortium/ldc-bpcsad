@@ -1,7 +1,7 @@
 # Copyright (c) 2012-2017, Trustees of the University of Pennsylvania
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
-"""TODO"""
+"""Functions for reading and writing segmentation formats."""
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
