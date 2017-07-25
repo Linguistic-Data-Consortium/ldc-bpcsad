@@ -51,21 +51,6 @@ from seglib.io import (read_label_file, write_label_file,
                        write_tdf_file, write_textgrid_file)
 
 
-# TODO:
-#
-# - move IO to seglib/segs.py or seglib/io.py
-# - write functions:
-#   - write_opensad
-#   - write_htk
-#   - write_tdf
-#   - write_textgrid
-#
-# - each write function should have signature:
-#   fn(fn, segs, ...)
-#
-# -
-
-
 FORMAT_TO_EXT = {'opensad_ref' : '_annot.txt',
                  'opensad_sys' : '.txt',
                  'tdf' : '.tdf',
