@@ -202,7 +202,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
         Path to original HTK hmmdefs file.
 
     newf : str
-        Path for modified HTK hmmdefs file. If ``newf`` allready exists, it
+        Path for modified HTK hmmdefs file. If ``newf`` already exists, it
         will be overwritten.
 
     speech_scale_factor : float, optional
@@ -280,7 +280,7 @@ if __name__ == '__main__':
     # Load paths from script file.
     if not args.scpf is None:
         with open(args.scpf, 'rb') as f:
-            args.afs = [l.strip() for l in f.readlines()]
+            args.afs = [line.strip() for line in f]
 
     # Modify GMM weights to account for speech scale factor.
     old_hmmdefs_fn = os.path.join(script_dir, 'model', 'hmmdefs')
