@@ -125,12 +125,12 @@ if __name__ == '__main__':
         sys.exit(1)
     args = parser.parse_args()
 
-    n_jobs = min(len(args.lfs), args.n_jobs)
-
     # Load paths from script file.
     if not args.scpf is None:
         with open(args.scpf, 'rb') as f:
             args.lfs = [line.strip() for line in f]
+
+    n_jobs = min(len(args.lfs), args.n_jobs)
 
     # Convert in parallel.
     f = delayed(convert_label_file)

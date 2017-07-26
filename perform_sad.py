@@ -274,13 +274,12 @@ if __name__ == '__main__':
         sys.exit(1)
     args = parser.parse_args()
 
-
-    n_jobs = min(len(args.afs), args.n_jobs)
-
     # Load paths from script file.
     if not args.scpf is None:
         with open(args.scpf, 'rb') as f:
             args.afs = [line.strip() for line in f]
+        
+    n_jobs = min(len(args.afs), args.n_jobs)
 
     # Modify GMM weights to account for speech scale factor.
     old_hmmdefs_fn = os.path.join(script_dir, 'model', 'hmmdefs')
