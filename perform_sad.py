@@ -71,10 +71,6 @@ Tips
   relative to non-speech segments. To do this, use the ``-a`` flag, which
   controls the scaling factor applied to speech model acoustic likelihoods
   (default is 1).
-- For very long recordings (on the order of an hour or longer), Viterbi
-  decoding may fail. If this happens, the best solution is to manually split
-  the recording into  two or more shorter files, each less than an hour in
-  length.
 
 References
 ----------
@@ -94,10 +90,12 @@ import sys
 import tempfile
 
 from joblib.parallel import delayed, Parallel
+import numpy as np
 
 from seglib.io import read_label_file, write_label_file
 from seglib.logging import getLogger
-from seglib.utils import elim_short_segs, merge_segs
+from seglib.utils import (concat_segs, convert_to_wav, elim_short_segs,
+                          get_dur, merge_segs)
 
 logger = getLogger()
 
@@ -108,6 +106,48 @@ class HTKConfig(object):
         self.__dict__.update(locals())
         del self.self
 
+
+def _segment_file(af, channel, start, end, htk_config):
+    """Segment audio file."""
+    # Create directory to hold intermediate segmentations.
+    tmp_dir = tempfile.mkdtemp()
+
+    # Convert to WAV and trim on selected channel.
+    bn = os.path.basename(af)
+    uid = os.path.splitext(bn)[0]
+    wf = os.path.join(tmp_dir, '%s.wav' % uid)
+    convert_to_wav(wf, af, channel, start, end)
+
+    # Segment.
+    cmd = ['HVite',
+           '-T', '0',
+           '-w', htk_config.phone_net_fn,
+           '-l', tmp_dir,
+           '-H', htk_config.macros_fn,
+           '-H', htk_config.hmmdefs_fn,
+           '-C', htk_config.config_fn,
+           '-p', '-0.3',
+           '-s', '5.0',
+           '-y', 'lab',
+           htk_config.dict_fn,
+           htk_config.monophones_fn,
+           wf,
+           ]
+    with open(os.devnull, 'wb') as f:
+        subprocess.call(cmd, stdout=f, stderr=f)
+    try :
+        lf = os.path.join(tmp_dir, uid + '.lab')
+        segs = read_label_file(lf, in_sec=False)
+    except IOError:
+        raise IOError
+    finally:
+        shutil.rmtree(tmp_dir)
+
+    return segs
+        
+
+MIN_CHUNK_DUR = 10
+MAX_CHUNK_DUR = 3000
 
 def segment_file(af, lab_dir, ext, htk_config, channel):
     """Perform speech activity detection on a single audio file.
@@ -134,62 +174,50 @@ def segment_file(af, lab_dir, ext, htk_config, channel):
     channel : int
         Channel (1-indexed) to perform SAD on.
     """
-    # Create directory to hold intermediate segmentations.
-    tmp_dir = tempfile.mkdtemp()
+    # Split recording into chunks of at most 3000 seconds.
+    rec_dur = get_dur(af)
+    bounds = list(np.arange(0, rec_dur, MAX_CHUNK_DUR))
+    suffix_dur = rec_dur - bounds[-1]
+    if suffix_dur > 0:
+        if suffix_dur < MIN_CHUNK_DUR:
+            bounds[-1] = rec_dur
+        else:
+            bounds.append(rec_dur)
+    rec_bounds = list(zip(bounds[:-1], bounds[1:]))
 
-    # Convert to 16 kHz monochannel WAV using SoX.
-    bn = os.path.basename(af)
-    uid = os.path.splitext(bn)[0]
-    wf = os.path.join(tmp_dir, '%s.wav' % uid)
-    with open(os.devnull, 'wb') as f:
-        cmd = ['sox', af,
-               '-r', '16000', # Resample to 16 kHz.
-                '-b', '16', # Make 16-bit.
-               '-e', 'signed-integer', # Linear PCM.
-               '-t', 'wav', # Write wav header.
-               wf,
-               'remix', str(channel), # Keep single channel.
-               ]
-        subprocess.call(cmd, stdout=f, stderr=f)
-
-    # Perform SAD using HTK. This command both extracts the features and
-    # performs decoding.
-    cmd = ['HVite',
-           '-T', '0',
-           '-w', htk_config.phone_net_fn,
-           '-l', tmp_dir,
-           '-H', htk_config.macros_fn,
-           '-H', htk_config.hmmdefs_fn,
-           '-C', htk_config.config_fn,
-           '-p', '-0.3',
-           '-s', '5.0',
-           '-y', ext.lstrip('.'),
-           htk_config.dict_fn,
-           htk_config.monophones_fn,
-           wf,
-           ]
-    with open(os.devnull, 'wb') as f:
-        subprocess.call(cmd, stdout=f, stderr=f)
-
-    # Merge segments.
-    olf = os.path.join(tmp_dir, '%s%s' % (uid, ext))
-    nlf = os.path.join(lab_dir, '%s%s' % (uid, ext))
-    try:
-        segs = read_label_file(olf, in_sec=False)
-        segs = merge_segs(segs)
-        segs = elim_short_segs(
-            segs, target_lab='nonspeech', replace_lab='speech',
-            min_dur=args.min_nonspeech_dur)
-        segs = merge_segs(segs)
-        segs = elim_short_segs(
-            segs, target_lab='speech', replace_lab='nonspeech',
-            min_dur=args.min_speech_dur)
-        segs = merge_segs(segs)
-        write_label_file(nlf, segs)
+    # Segment chunks.
+    try:    
+        seg_seqs = []
+        for rec_onset, rec_offset in rec_bounds:
+            segs = _segment_file(af, channel, rec_onset, rec_offset,
+                                 htk_config)
+            dur = rec_offset - rec_onset
+            segs[-1][1] = dur
+            seg_seqs.append(segs)
+        segs = concat_segs(seg_seqs, rec_dur)
     except IOError:
         logger.warn('SAD failed for %s. Skipping.' % af)
-    finally:
-        shutil.rmtree(tmp_dir)
+        return
+
+    # Postprocess segmentaiton:
+    # - merge adjacent segments with same level
+    # - eliminate short nonspeech segments
+    # - eliminate short speech segments
+    segs = merge_segs(segs)
+    segs = elim_short_segs(
+        segs, target_lab='nonspeech', replace_lab='speech',
+        min_dur=args.min_nonspeech_dur)
+    segs = merge_segs(segs)
+    segs = elim_short_segs(
+        segs, target_lab='speech', replace_lab='nonspeech',
+        min_dur=args.min_speech_dur)
+    segs = merge_segs(segs)
+
+    # Write.
+    bn = os.path.basename(af)
+    uid = os.path.splitext(bn)[0]
+    lf = os.path.join(lab_dir, uid + ext)
+    write_label_file(lf, segs)
 
 
 def write_hmmdefs(oldf, newf, speech_scale_factor=1):
@@ -278,7 +306,7 @@ if __name__ == '__main__':
     if not args.scpf is None:
         with open(args.scpf, 'rb') as f:
             args.afs = [line.strip() for line in f]
-        
+
     n_jobs = min(len(args.afs), args.n_jobs)
 
     # Modify GMM weights to account for speech scale factor.
