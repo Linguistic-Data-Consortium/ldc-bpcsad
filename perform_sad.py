@@ -107,7 +107,7 @@ class HTKConfig(object):
         del self.self
 
 
-def _segment_file(af, channel, start, end, htk_config):
+def _segment_chunk(af, channel, start, end, htk_config):
     """Segment audio file."""
     # Create directory to hold intermediate segmentations.
     tmp_dir = tempfile.mkdtemp()
@@ -144,12 +144,10 @@ def _segment_file(af, channel, start, end, htk_config):
         shutil.rmtree(tmp_dir)
 
     return segs
-        
 
-MIN_CHUNK_DUR = 10
-MAX_CHUNK_DUR = 3000
 
-def segment_file(af, lab_dir, ext, htk_config, channel):
+def _segment_file(af, lab_dir, ext, htk_config, channel, min_chunk_dur=10.0,
+                 max_chunk_dur=3600.):
     """Perform speech activity detection on a single audio file.
 
     The resulting segmentation will be saved in an HTK label file in
@@ -173,33 +171,39 @@ def segment_file(af, lab_dir, ext, htk_config, channel):
 
     channel : int
         Channel (1-indexed) to perform SAD on.
+
+    min_chunk_dur : float, optional
+        Minimum duration in seconds of chunk SAD may be performed on when
+        splitting long recordings.
+        (Default: 10.0)
+
+    max_chunk_dur : float, optional
+        Maximum duration in seconds of chunk SAD may be performed on when
+        splitting long recordings.
+        (Default: 3600.0)
     """
     # Split recording into chunks of at most 3000 seconds.
     rec_dur = get_dur(af)
-    bounds = list(np.arange(0, rec_dur, MAX_CHUNK_DUR))
+    bounds = list(np.arange(0, rec_dur, max_chunk_dur))
     suffix_dur = rec_dur - bounds[-1]
     if suffix_dur > 0:
-        if suffix_dur < MIN_CHUNK_DUR:
+        if suffix_dur < min_chunk_dur:
             bounds[-1] = rec_dur
         else:
             bounds.append(rec_dur)
     rec_bounds = list(zip(bounds[:-1], bounds[1:]))
 
     # Segment chunks.
-    try:    
-        seg_seqs = []
-        for rec_onset, rec_offset in rec_bounds:
-            segs = _segment_file(af, channel, rec_onset, rec_offset,
-                                 htk_config)
-            dur = rec_offset - rec_onset
-            segs[-1][1] = dur
-            seg_seqs.append(segs)
+    seg_seqs = []
+    for rec_onset, rec_offset in rec_bounds:
+        segs = _segment_chunk(af, channel, rec_onset, rec_offset,
+                              htk_config)
+        dur = rec_offset - rec_onset
+        segs[-1][1] = dur
+        seg_seqs.append(segs)
         segs = concat_segs(seg_seqs, rec_dur)
-    except IOError:
-        logger.warn('SAD failed for %s. Skipping.' % af)
-        return
 
-    # Postprocess segmentaiton:
+    # Postprocess segmentation:
     # - merge adjacent segments with same level
     # - eliminate short nonspeech segments
     # - eliminate short speech segments
@@ -218,6 +222,55 @@ def segment_file(af, lab_dir, ext, htk_config, channel):
     uid = os.path.splitext(bn)[0]
     lf = os.path.join(lab_dir, uid + ext)
     write_label_file(lf, segs)
+
+
+def segment_file(af, lab_dir, ext, htk_config, channel, min_chunk_dur=10.0,
+                 max_chunk_dur=3600.):
+    """Perform speech activity detection on a single audio file.
+
+    The resulting segmentation will be saved in an HTK label file in
+    ``lab_dir`` with the same name as ``af`` but file extension ``ext``.
+    For instance, ``segment_file('A.wav', 'results', '.lab', htk_config)``
+    will create a file ``results/A.lab`` containing the segmentation.
+
+    Parameters
+    ----------
+    af : str
+        Path to audio file on which SAD is to be run.
+
+    lab_dir : str
+        Path to output directory for label file.
+
+    ext : str
+        File extension to use for label file.
+
+    htk_config : HTKConfig
+        HTK configuration.
+
+    channel : int
+        Channel (1-indexed) to perform SAD on.
+
+    min_chunk_dur : float, optional
+        Minimum duration in seconds of chunk SAD may be performed on when
+        splitting long recordings.
+        (Default: 10.0)
+
+    max_chunk_dur : float, optional
+        Maximum duration in seconds of chunk SAD may be performed on when
+        splitting long recordings.
+        (Default: 3600.0)
+    """
+    while max_chunk_dur >= min_chunk_dur:
+        try:
+            logger.info('Attempting segmentation for %s with max chunk duration'
+                        ' of %.2f sec' % (af, max_chunk_dur))
+            _segment_file(af, lab_dir, ext, htk_config, channel, min_chunk_dur,
+                          max_chunk_dur)
+            return
+        except IOError:
+            max_chunk_dur /= 2.
+    logger.warn('SAD failed for %s. Skipping.' % af)
+    return
 
 
 def write_hmmdefs(oldf, newf, speech_scale_factor=1):
