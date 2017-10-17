@@ -32,7 +32,7 @@ The following are required to run this software:
 - HTK >= 3.4.0 (http://htk.eng.cam.ac.uk/)
 
 To sucessfully compile HTK, you may need to disable X11 and HSLab
-support:
+support::
 
     ./configure --without-x --disable-hslab
 
@@ -40,14 +40,14 @@ support:
 III. Performing SAD
 ===================
 To perform SAD for a set of WAV files and store the segmentations in the
-directory ``label_dir``:
+directory ``label_dir``::
 
     python perform_sad.py -L label_dir rec1.wav rec2.wav rec3.wav ...
 
 For each of the WAV files ``rec1.wav``, ``rec2.wav``, ``rec3.wav``, ... a
 corresponding label file (``rec1.lab``, ``rec2.lab``, etc) will be created in
 ``label_dir``. Label files list the detected speech and non-speech segments
-with one segment per line, each line having the format:
+with one segment per line, each line having the format::
 
     ONSET OFFSET LAB
 
