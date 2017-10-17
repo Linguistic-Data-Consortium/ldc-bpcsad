@@ -66,10 +66,12 @@ by ``perform_sad.py`` to Praat TextGrids stored in ``tg_dir``::
 
 which will create TextGrid files::
 
-- tg_dir/rec1.tg
-- tg_dir/rec2.tg
-- tg_dir/rec3.tg
-- etc
+    tg_dir/rec1.tg
+    tg_dir/rec2.tg
+    tg_dir/rec3.tg
+    .
+    .
+    .
 
 In total, four alternate output formats are supported by ``convert_labe.py``::
 
