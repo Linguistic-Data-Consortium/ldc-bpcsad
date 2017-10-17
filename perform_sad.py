@@ -92,6 +92,7 @@ import tempfile
 from joblib.parallel import delayed, Parallel
 import numpy as np
 
+from seglib import __version__ as VERSION
 from seglib.io import read_label_file, write_label_file
 from seglib.logging import getLogger
 from seglib.utils import (concat_segs, convert_to_wav, elim_short_segs,
@@ -350,6 +351,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '-j', nargs=None, default=1, type=int, metavar='INT', dest='n_jobs',
         help='set num threads to use (Default: %(default)s)')
+    parser.add_argument(
+        '--version', action='version', version='%(prog)s ' + VERSION)
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)

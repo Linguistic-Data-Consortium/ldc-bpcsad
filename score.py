@@ -20,6 +20,7 @@ import sys
 
 import numpy as np
 
+from seglib import __version__ as VERSION
 from seglib.io import read_label_file
 from seglib.logging import getLogger
 
@@ -147,6 +148,8 @@ if __name__ == '__main__':
         '--sys_ext', nargs=None, default='.lab', metavar='STR',
         dest='sys_lab_ext',
         help="set system label file extension (Default: %(default)s)")
+    parser.add_argument(
+        '--version', action='version', version='%(prog)s ' + VERSION)
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)

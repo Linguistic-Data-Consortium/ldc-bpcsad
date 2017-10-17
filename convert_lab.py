@@ -46,6 +46,7 @@ import sys
 
 from joblib import delayed, Parallel
 
+from seglib import __version__ as VERSION
 from seglib.io import (read_label_file, write_label_file,
                        write_opensad_reference_file, write_opensad_system_file,
                        write_tdf_file, write_textgrid_file)
@@ -120,6 +121,8 @@ if __name__ == '__main__':
         '-j', nargs=None, default=1, type=int,
         metavar='INT', dest='n_jobs',
         help='set num threads to use (Default: %(default)s)')
+    parser.add_argument(
+        '--version', action='version', version='%(prog)s ' + VERSION)
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
