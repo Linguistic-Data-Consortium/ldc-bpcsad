@@ -185,7 +185,10 @@ def _segment_file(af, lab_dir, ext, htk_config, channel, min_chunk_dur=10.0,
     """
     # Split recording into chunks of at most 3000 seconds.
     rec_dur = get_dur(af)
-    bounds = list(np.arange(0, rec_dur, max_chunk_dur))
+    if rec_dur > max_chunk_dur:
+        bounds = list(np.arange(0, rec_dur, max_chunk_dur))
+    else:
+        bounds = [0.0, rec_dur]
     suffix_dur = rec_dur - bounds[-1]
     if suffix_dur > 0:
         if suffix_dur < min_chunk_dur:
@@ -202,7 +205,7 @@ def _segment_file(af, lab_dir, ext, htk_config, channel, min_chunk_dur=10.0,
         dur = rec_offset - rec_onset
         segs[-1][1] = dur
         seg_seqs.append(segs)
-        segs = concat_segs(seg_seqs, rec_dur)
+    segs = concat_segs(seg_seqs, rec_dur)
 
     # Postprocess segmentation:
     # - merge adjacent segments with same level
@@ -371,12 +374,12 @@ if __name__ == '__main__':
     write_hmmdefs(old_hmmdefs_fn, new_hmmdefs_fn, args.speech_scale_factor)
 
     # Perform SAD on files in parallel.
-    htk_config = HTKConfig(os.path.join(script_dir, 'phone_net'),
+    htk_config = HTKConfig(os.path.join(script_dir, 'model', 'phone_net'),
                            os.path.join(script_dir, 'model', 'macros'),
                            new_hmmdefs_fn,
                            os.path.join(script_dir, 'model', 'config'),
-                           os.path.join(script_dir, 'dict'),
-                           os.path.join(script_dir, 'monophones'))
+                           os.path.join(script_dir, 'model', 'dict'),
+                           os.path.join(script_dir, 'model', 'monophones'))
     kwargs = dict(lab_dir=args.lab_dir, ext=args.ext, htk_config=htk_config,
                   channel=args.channel)
     f = delayed(segment_file)
