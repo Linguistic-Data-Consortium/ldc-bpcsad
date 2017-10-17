@@ -59,7 +59,26 @@ will be output with the extension ``.lab``, though this may be changed via the
 
 IV. Converting between output formats
 =====================================
-TODO
+To convert label files  ``rec1.lab``, ``rec2.lab``, ``rec3.lab``, ... output
+by ``perform_sad.py`` to Praat TextGrids stored in ``tg_dir``::
+
+    python convert_lab.py --format tg -L tg_dir rec1.lab rec2.lab rec3.lab ...
+
+which will create TextGrid files:
+
+    tg_dir/rec1.tg
+    tg_dir/rec2.tg
+    tg_dir/rec3.tg
+    .
+    .
+    .
+
+In total, four alternate output formats are supported by ``convert_labe.py``::
+
+- ``--format opensad_ref``  --  NIST OpenSAT reference segmentation
+- ``--format opensad_sys``  --  NIST OpenSAT system segmentation
+- ``--format tdf``  --  Xtrans TDF
+- ``--format tg``  --  Praat TextGrid
 
 
 V. References
