@@ -297,10 +297,14 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
         (Default: 1)
     """
     with open(oldf, 'rb') as f:
-        lines = f.readlines()
+        lines = [line.decode('utf-8') for line in f]
 
     with open(newf, 'wb') as g:
-        g.writelines(lines[:3]) # Header.
+        # Header.
+        for line in lines[:3]:
+            g.write(line.encode('utf-8'))
+            
+        # Model definitions.
         curr_phone = None
         for line in lines[3:]:
             # Keep track of which model we are dealing with.
@@ -311,7 +315,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
                 gconst = float(line[9:-1])
                 gconst += log(speech_scale_factor)
                 line = '<GCONST> %.6e\n' % gconst
-            g.write(line)
+            g.write(line.encode('utf-8'))
 
 
 
