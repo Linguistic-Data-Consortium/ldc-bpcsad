@@ -273,7 +273,7 @@ def segment_file(af, lab_dir, ext, htk_config, channel, min_chunk_dur=10.0,
             return
         except IOError:
             max_chunk_dur /= 2.
-    logger.warn('SAD failed for %s. Skipping.' % af)
+    logger.warning('SAD failed for %s. Skipping.' % af)
     return
 
 
