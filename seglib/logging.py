@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 import logging
 import sys
 
-import six
+from . import six
 
 __all__ = ['getLogger']
 
