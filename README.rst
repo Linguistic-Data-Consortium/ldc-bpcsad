@@ -26,8 +26,8 @@ II. Dependencies
 The following are required to run this software:
 
 - Python >= 2.7 (https://www.python.org/)
-- NumPy >= 1.1.0 (https://github.com/numpy/)
-- joblib >= 0.7.0 (https://pypi.python.org/pypi/joblib)
+- NumPy >= 1.11.0 (https://github.com/numpy/)
+- joblib >= 0.10.0 (https://pypi.python.org/pypi/joblib)
 - SoX >= 14.4 (http://sox.sourceforge.net/)
 - HTK >= 3.4.0 (http://htk.eng.cam.ac.uk/)
 
