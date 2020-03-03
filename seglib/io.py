@@ -7,11 +7,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import os
 
-__all__ = ['read_label_file', 'write_label_file',
+from .logging import getLogger
+
+__all__ = ['read_label_file', 'write_label_file', 'read_script_file',
            'write_opensad_reference_file', 'write_opensad_system_file',
            'write_tdf_file', 'write_textgrid_file']
 
-# TODO: Simplify some of this with the csv module.
+
+logger = getLogger()
 
 
 def read_label_file(lf, in_sec=True, enc='utf-8'):
@@ -306,3 +309,57 @@ def write_textgrid_file(tgf, segs):
             write_line('            xmax = %f ' % offset)
             write_line('            text = "%s" ' % label)
             n += 1
+
+
+def read_script_file(fn):
+    """Read Kaldi or HTK script file.
+
+    The script file is expected to be in one of two formats:
+
+    - Kaldi
+
+      Each line contains has two whitespace delimited fields:
+
+      - uri  --  a uniform resource identifier for the file
+      - path  --  the path to the file
+
+    - HTK
+
+      Each line consists of a file path.
+
+    For HTK format script files, URIs will be deduced automatically from the
+    file's basename.
+
+    Parameters
+    ----------
+    fn : str
+        Path to script file.
+
+    Returns
+    -------
+    paths : dict
+        Mapping from URIs to paths.
+    """
+    paths = {}
+    with open(fn, 'rb') as f:
+        for line in f:
+            fields = line.decode('utf-8').strip().split()
+            if len(fields) > 2:
+                logger.warn(
+                    'Too many fields in line of script file "%s". Skipping.',
+                    fn)
+                continue
+            fpath = fields[-1]
+            if len(fields) == 2:
+                uri = fields[0]
+            else:
+                uri = os.path.splitext(os.path.basename(fpath))[0]
+                logger.warn(
+                    'No URI specified for file "%s". '
+                    'Setting using basename: "%s".', fpath, uri)
+            if uri in paths:
+                logger.warn(
+                    'Duplicate URI "%s" detected. Skipping.', uri)
+                continue
+            paths[uri] = fpath
+    return paths
