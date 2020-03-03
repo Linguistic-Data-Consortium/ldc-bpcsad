@@ -368,7 +368,7 @@ if __name__ == '__main__':
     # Load paths from script file.
     if not args.scpf is None:
         with open(args.scpf, 'rb') as f:
-            args.afs = [line.strip() for line in f]
+            args.afs = [line.decode('utf-8').strip() for line in f]
 
     n_jobs = min(len(args.afs), args.n_jobs)
 
