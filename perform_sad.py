@@ -171,14 +171,13 @@ def _segment_file(af, lf, htk_config, channel, min_speech_dur=0.500,
     channel : int
         Channel (1-indexed) to perform SAD on.
 
+    min_speech_dur : float, optional
+        Minimum duration of speech segments in seconds.
+        (Default: 0.500)
+
     min_nonspeech_dur : float, optional
         Minimum duration of nonspeech segments in seconds.
         (Default: 0.300)
-
-    min_chunk_dur : float, optional
-        Minimum duration in seconds of chunk SAD may be performed on when
-        splitting long recordings.
-        (Default: 10.0)
 
     min_chunk_dur : float, optional
         Minimum duration in seconds of chunk SAD may be performed on when
