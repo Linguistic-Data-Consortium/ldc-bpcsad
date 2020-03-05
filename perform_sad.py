@@ -407,8 +407,11 @@ def main():
     def kwargs_gen():
         for uri in sorted(audio_paths.keys()):
             af = audio_paths[uri]
-            yield dict(uri=uri, af=af, lab_dir=args.lab_dir, ext=args.ext,
-                       htk_config=htk_config, channel=args.channel)
+            yield dict(
+                uri=uri, af=af, lab_dir=args.lab_dir, ext=args.ext,
+                htk_config=htk_config, channel=args.channel,
+                min_speech_dur=args.min_speech_dur,
+                min_nonspeech_dur=args.min_nonspeech_dur)
     f = delayed(segment_file)
     Parallel(n_jobs=n_jobs, verbose=0)(f(**kwargs) for kwargs in kwargs_gen())
 
