@@ -94,7 +94,7 @@ def convert_to_wav(wf, af, channel=1, start=0, end=None):
     except subprocess.CalledProcessError:
         pass
     try:
-        cmd = ['ffmpeg',  '-i', af, wf]
+        cmd = ['ffmpeg', '-i', af, wf]
         with open(os.devnull, 'wb') as f:
             raw = subprocess.check_output(cmd, stderr=f)
     except subprocess.CalledProcessError:
