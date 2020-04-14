@@ -18,7 +18,7 @@ def get_dur(af):
     Parameters
     ----------
     af : str
-        Path to audio file. May be in any format understood by SoX.
+        Path to audio file. May be in any format understood by SoX or ffmpeg.
 
     Returns
     -------
@@ -30,8 +30,18 @@ def get_dur(af):
         with open(os.devnull, 'wb') as f:
             dur = float(subprocess.check_output(cmd, stderr=f))
     except subprocess.CalledProcessError:
+        pass
+    try:
+        cmd = ['ffprobe',
+               '-i', af,
+               '-show_entries', 'format=duration',
+               '-v', 'quiet',
+               '-of', 'csv=p=0']
+        with open(os.devnull, 'wb') as f:
+            dur = float(subprocess.check_output(cmd, stderr=f))
+        return dur
+    except subprocess.CalledProcessError:
         raise IOError('Error opening: %s' % af)
-    return dur
 
 
 def convert_to_wav(wf, af, channel=1, start=0, end=None):
@@ -77,6 +87,13 @@ def convert_to_wav(wf, af, channel=1, start=0, end=None):
                'trim', str(start), '=%s' % end,
                'rate', '16000',
                ]
+        with open(os.devnull, 'wb') as f:
+            raw = subprocess.check_output(cmd, stderr=f)
+        return
+    except subprocess.CalledProcessError:
+        pass
+    try:
+        cmd = ['ffmpeg', '-i', af, wf]
         with open(os.devnull, 'wb') as f:
             raw = subprocess.check_output(cmd, stderr=f)
     except subprocess.CalledProcessError:

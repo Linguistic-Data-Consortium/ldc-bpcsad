@@ -353,7 +353,7 @@ def read_script_file(fn):
             if len(fields) == 2:
                 uri = fields[0]
             else:
-                uri = os.path.splitext(os.path.basename(fpath))[0]
+                uri = os.path.basename(fpath).split('.')[0]
                 logger.warn(
                     'No URI specified for file "%s". '
                     'Setting using basename: "%s".', fpath, uri)
