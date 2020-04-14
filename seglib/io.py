@@ -345,7 +345,7 @@ def read_script_file(fn):
         for line in f:
             fields = line.decode('utf-8').strip().split()
             if len(fields) > 2:
-                logger.warn(
+                logger.warning(
                     'Too many fields in line of script file "%s". Skipping.',
                     fn)
                 continue
@@ -354,11 +354,11 @@ def read_script_file(fn):
                 uri = fields[0]
             else:
                 uri = os.path.basename(fpath).split('.')[0]
-                logger.warn(
+                logger.warning(
                     'No URI specified for file "%s". '
                     'Setting using basename: "%s".', fpath, uri)
             if uri in paths:
-                logger.warn(
+                logger.warning(
                     'Duplicate URI "%s" detected. Skipping.', uri)
                 continue
             paths[uri] = fpath
