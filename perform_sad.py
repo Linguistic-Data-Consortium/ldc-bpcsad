@@ -280,6 +280,9 @@ def segment_file(uri, af, lab_dir, ext, htk_config, channel,
         (Default: 3600.0)
     """
     lf = os.path.join(lab_dir, uri + ext)
+    rec_dur = get_dur(af)
+    max_chunk_dur = min(max_chunk_dur, rec_dur)
+    min_chunk_dur = min(min_chunk_dur, rec_dur)
     while max_chunk_dur >= min_chunk_dur:
         try:
             logger.info(
