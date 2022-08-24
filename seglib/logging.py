@@ -2,13 +2,9 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Lightweight logging module."""
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
 import logging
 import sys
 
-from . import six
 
 __all__ = ['getLogger']
 
@@ -57,8 +53,6 @@ class CustomStreamHandler(logging.Handler):
                 stream = self.stdout
             fs = '%s\n'
             msg = fs % msg
-            if six.PY2:
-                msg = msg.encode('utf-8')
             stream.write(msg)
             self.flush()
         except (KeyboardInterrupt, SystemExit):

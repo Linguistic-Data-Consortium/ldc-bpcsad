@@ -12,10 +12,9 @@ To evaluate system output stored in label files ``rec1.lab``, ``rec2.lab``,
 
 which will
 """
-from __future__ import print_function
-from __future__ import unicode_literals
 import argparse
 import os
+from pathlib import Path
 import sys
 
 import numpy as np
@@ -27,16 +26,16 @@ from seglib.logging import getLogger
 logger = getLogger()
 
 
-def score_file(sys_lf, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab',
+def score_file(sys_lab_path, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab',
                step=0.001):
     """Score SAD on a single file.
 
     Parameters
     ----------
-    sys_lf : str
+    sys_lab_path : Path
         Path to system label file.
 
-    ref_lab_dir : str
+    ref_lab_dir : Path
         Path to search for reference label file.
 
     sys_lab_ext : str, optional
@@ -46,7 +45,7 @@ def score_file(sys_lf, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab',
     ref_lab_ext : str, optional
         Reference label file extension.
         (Default: '.lab')
-    
+
     step : float, optional
         Step size in seconds.
         (Default: 0.001)
@@ -57,7 +56,7 @@ def score_file(sys_lf, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab',
         Total speech duration in seconds in reference segmentation.
 
     ref_nonspeech_dur : float
-        Total nonspeech duration in seconds in reference segmentation. 
+        Total nonspeech duration in seconds in reference segmentation.
 
     fa_dur : float
         Total duration in seconds of system false alarms.
@@ -65,21 +64,20 @@ def score_file(sys_lf, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab',
     miss_dur : float
         Total duration in seconds of system misses.
     """
-    # NOTE: Would be more proper to use interval trees, but the intervaltree
-    #       Python module is in pure Python and far slower than this approach.
+    sys_lab_path = Path(sus_lab_path)
+    ref_lab_dir = Path(ref_lab_dir)
 
     # Load segmentations.
-    def try_load_segs(lf):
+    def try_load_segs(sys_lab_path):
         try:
-            return read_label_file(lf)
+            return read_label_file(sys_lab_path)
         except:
-            logger.warning('Problem loading segmentation from %s. Skipping.'
-                           % lf)
+            logger.warning(f'Problem loading segmentation from "{sys_lab_path}". '
+                           f'Skipping.')
             return None
-    sys_segs = try_load_segs(sys_lf)
-    bn = os.path.basename(sys_lf)
-    ref_segs = try_load_segs(
-        os.path.join(ref_lab_dir, bn.replace(sys_lab_ext, ref_lab_ext)))
+    sys_segs = try_load_segs(sys_lab_path)
+    ref_lab_path = Path(ref_lab_dir, sys_lab_path.stem + ref_lab_ext)
+    ref_segs = try_load_segs(ref_lab_path)
     if sys_segs is None or ref_segs is None:
         return
 
@@ -105,10 +103,10 @@ def score_file(sys_lf, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab',
     return ref_speech_dur, ref_nonspeech_dur, fa_dur, miss_dur
 
 
-def score_files(sys_lfs, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab'):
+def score_files(sys_lab_paths, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab'):
     def kwargs_gen():
-        for sys_lf in sys_lfs:
-            yield dict(sys_lf=sys_lf, ref_lab_dir=ref_lab_dir,
+        for sys_lab_path in sys_lab_paths:
+            yield dict(sys_lab_path=sys_lab_path, ref_lab_dir=ref_lab_dir,
                        sys_lab_ext=sys_lab_ext, ref_lab_ext=ref_lab_ext)
     # DEBUG #
     import time
@@ -119,10 +117,9 @@ def score_files(sys_lfs, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab'):
     fa_rate = 100*(fa_dur / ref_nonspeech_dur)
     miss_rate = 100*(miss_dur / ref_speech_dur)
     dcf = 0.25*fa_rate + 0.75*miss_rate
-    logger.info('DCF: %.2f%%, FA: %.2f%%, MISS: %.2f%%' %
-                (dcf, fa_rate, miss_rate))
+    logger.info(f'DCF: {dcf:.2f}, FA: {fa_rate:.2f}, MISS: {miss_rate:.2f}\n')
     dur = time.time() - t0
-    print('DUR: %.2f sec' % dur)
+    print(f'DUR: {dur:.2f} seconds')
     # DEBUG #
 
 
@@ -134,11 +131,12 @@ if __name__ == '__main__':
         description='Score SAD output.', add_help=True,
         usage='%(prog)s [options] ref_lab_dir [sys_lfs]')
     parser.add_argument(
-        'ref_lab_dir', nargs=None, help='reference label directory')
+        'ref_lab_dir', metavar='ref-lab-dir', type=Path,  help='reference label directory')
     parser.add_argument(
-        'sys_lfs', nargs='*', help='system label files to be scored')
+        'sys_lab_paths', metavar='sys-lab', type=Path, nargs='*',
+        help='system label files to be scored')
     parser.add_argument(
-        '-S', nargs=None, default=None, metavar='STR', dest='scpf',
+        '-S', metavar='Path', type=Path,  dest='scp_path',
         help='set script file (Default: %(default)s)')
     parser.add_argument(
         '--ref_ext', nargs=None, default='.lab', metavar='STR',
@@ -156,10 +154,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Load paths from script file.
-    if not args.scpf is None:
-        with open(args.scpf, 'rb') as f:
-            args.sys_lfs = [line.strip() for line in f]
+    if not args.scp_path is None:
+        with open(args.scp_path, 'r', encoding='utf-8') as f:
+            args.sys_lab_paths = [Path(line.strip()) for line in f]
 
     # Score.
-    score_files(args.sys_lfs, args.ref_lab_dir, args.sys_lab_ext,
+    score_files(args.sys_lab_paths, args.ref_lab_dir, args.sys_lab_ext,
                 args.ref_lab_ext)

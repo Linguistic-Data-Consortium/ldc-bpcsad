@@ -2,10 +2,7 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Functions for reading and writing segmentation formats."""
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-import os
+from pathlib import Path
 
 from .logging import getLogger
 
@@ -22,7 +19,7 @@ def read_label_file(lf, in_sec=True, enc='utf-8'):
 
     Parameters
     ----------
-    lf : str
+    lf : Path
         Path to label file.
 
     in_sec : bool, optional
@@ -42,8 +39,9 @@ def read_label_file(lf, in_sec=True, enc='utf-8'):
         the onset and offset of the segment in seconds relative to the start
         of the recording.
     """
-    with open(lf, 'rb') as f:
-        segs = [line.decode(enc).strip().split()[:3] for line in f]
+    lf = Path(lf)
+    with open(lf, 'r', encoding=enc) as f:
+        segs = [line.strip().split()[:3] for line in f]
 
     for seg in segs:
         seg[0] = float(seg[0])
@@ -60,7 +58,7 @@ def write_label_file(lf, segs, in_sec=True, enc='utf-8'):
 
     Parameters
     ----------
-    lf : str
+    lf : Path
         Path to label file.
 
     segs : list of tuple
@@ -78,30 +76,30 @@ def write_label_file(lf, segs, in_sec=True, enc='utf-8'):
         Character encoding of ``lf``.
         (Default: 'utf-8')
     """
-    with open(lf, 'wb') as f:
+    lf = Path(lf)
+    with open(lf, 'w', encoding=enc) as f:
         for onset, offset, label in segs:
             if not in_sec:
                 onset = seconds_2_htk_units(onset)
                 offset = seconds_2_htk_units(offset)
-                line = '%d %d %s\n' % (onset, offset, label)
+                line = f'{onset}\t{offset}\t{label}\n'
             else:
-                line = '%.2f %.2f %s\n' % (onset, offset, label)
-            f.write(line.encode(enc))
+                # Fix precision at 2 as tool uses 100 ms sample rate for features.
+                line = f'{onset:.2f}\t{offset:.2f}\t{label}\n'
+            f.write(line)
 
 
 def htk_units_2_seconds(t):
-    """Convert from 100 ns units to seconds.
-    """
+    """Convert from 100 ns units to seconds."""
     return t*10.**-7
 
 
 def seconds_2_htk_units(t):
-    """Convert from seconds to 100 ns units, rounded down to nearest integer.
-    """
+    """Convert from seconds to 100 ns units."""
     return int(t*10**7)
 
 
-def write_opensad_system_file(fn, segs, test_set='test_set'):
+def write_opensad_system_file(fpath, segs, test_set='test_set'):
     """Write segments to file in SYSTEM format expected by NIST OpenSAD eval
     tool.
 
@@ -111,8 +109,8 @@ def write_opensad_system_file(fn, segs, test_set='test_set'):
 
     Parameters
     ----------
-    fn : str
-        Output OpenSAD SYSTEM file.
+    fpath : Path
+        Path to output OpenSAD SYSTEM file.
 
     segs : list of tuple
         Segments.
@@ -129,27 +127,27 @@ def write_opensad_system_file(fn, segs, test_set='test_set'):
     - Sanders, G. (2015). "NIST OpenSAD scoring software."
       https://www.nist.gov/itl/iad/mig/nist-open-speech-activity-detection-evaluation
     """
-    with open(fn, 'wb') as f:
-        bn = os.path.basename(fn)
-        fid = os.path.splitext(bn)[0]
+    fpath = Path(fpath)
+    with open(fpath, 'w', encoding='utf-8') as f:
+        uri = fpath.stem
         for onset, offset, label in segs:
             label = 'non-speech' if label == 'nonspeech' else label
             cols = ['fake_testDef.xml', # Test Definition File.
                     test_set, # TestSet ID.
                     'test', # Test ID.
                     'SAD', # Task.
-                    fid, # File ID.
-                    '%.3f' % onset, # Interval start (seconds).
-                    '%.3f' % offset, # Interval end (seconds).
+                    uri, # File ID.
+                    f'{onset:.3f}', # Interval start (seconds).
+                    f'{offset:.3f}', # Interval end (seconds).
                     label, # Type (one of {speech, non-speech}).
                     '0.5', # Confidence.
             ]
             line = '\t'.join(cols)
-            f.write(line.encode('utf-8'))
+            f.write(line)
             f.write('\n')
 
 
-def write_opensad_reference_file(fn, segs, test_set='test_set'):
+def write_opensad_reference_file(fpath, segs, test_set='test_set'):
     """Write segments to file in REFERENCE format expected by NIST OpenSAD eval
     tool.
 
@@ -159,8 +157,8 @@ def write_opensad_reference_file(fn, segs, test_set='test_set'):
 
     Parameters
     ----------
-    fn : str
-        Output OpenSAD REFERENCE file.
+    fpath : Path
+        Output path for OpenSAD REFERENCE file.
 
     segs : list of tuple
         Segments.
@@ -177,25 +175,24 @@ def write_opensad_reference_file(fn, segs, test_set='test_set'):
     - Sanders, G. (2015). "NIST OpenSAD scoring software."
       https://www.nist.gov/itl/iad/mig/nist-open-speech-activity-detection-evaluation
     """
-    with open(fn, 'wb') as f:
-        bn = os.path.basename(fn)
-        fid = os.path.splitext(bn)[0]
+    fpath = Path(fpath)
+    with open(fpath, 'w', encoding='utf-8') as f:
         for onset, offset, label in segs:
             label = 'NS' if label == 'nonspeech' else 'S'
             cols = ['fake_testDef.xml', # Audio filename.
                     '1', # Channel ID.
-                    '%.3f' % onset, # Interval start (seconds).
-                    '%.3f' % offset, # Interval end (seconds).
+                    f'{onset:.3f}',  # Interval start (seconds).
+                    f'{offset:.3f}',  # Interval end (seconds).
                     label, # Type (one of {S, NS, T}).
                     'manual', # Confidence.
             ]
             cols.extend(['']*6)
             line = '\t'.join(cols)
-            f.write(line.encode('utf-8'))
+            f.write(line)
             f.write('\n')
 
 
-def write_tdf_file(tdf_fn, segs):
+def write_tdf_file(tdf_path, segs):
     """Write speech segments to file in XTrans TDF format.
 
     The TDF format is the native XTrans data format and consists of a set of
@@ -203,7 +200,7 @@ def write_tdf_file(tdf_fn, segs):
 
     Parameters
     ----------
-    tdf_fn : str
+    tdf_path : str
         Output TDF file.
 
     segs : list of tuple
@@ -216,9 +213,10 @@ def write_tdf_file(tdf_fn, segs):
     - LDC. (2007). "Using XTrans for broadcast transcription: a user manual."
       https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/xtrans-manual-v3.0.pdf
     """
-    with open(tdf_fn, 'wb') as f:
+    tdf_path = Path(tdf_path)
+    with open(tdf_path, 'w', encoding='utf-8') as f:
         def write_line(line):
-            f.write(line.encode('utf-8'))
+            f.write(line)
             f.write('\r\n') # This is what Xtrans does...
 
         # Write header.
@@ -241,13 +239,13 @@ def write_tdf_file(tdf_fn, segs):
         write_line('MM sectionBoundaries\t[0.0, 9999999.0]')
 
         # Write speech segments.
-        fid = os.path.splitext(os.path.basename(tdf_fn))[0]
+        uri = tdf_path.stem
         n_segs = 0
         for onset, offset, label in segs:
             if label != 'speech':
                 continue
             n_segs += 1
-            fields = [fid,
+            fields = [uri,
                       '0',
                       str(onset),
                       str(offset),
@@ -264,7 +262,7 @@ def write_tdf_file(tdf_fn, segs):
             write_line('\t'.join(fields))
 
 
-def write_textgrid_file(tgf, segs):
+def write_textgrid_file(tg_path, segs):
     """Write speech segments to file in Praat TextGrid format.
 
     The TextGrid format is described in the online Praat manual:
@@ -273,15 +271,16 @@ def write_textgrid_file(tgf, segs):
 
     Parameters
     ----------
-    tgf : str
+    tg_path : Path
         Output TextGrid file.
 
     segs : list of tuple
         Segments.
     """
-    with open(tgf, 'wb') as f:
+    tg_path = tg_path
+    with open(tg_path, 'w', encoding='utf-8') as f:
         def write_line(line):
-            f.write(line.encode('utf-8'))
+            f.write(line)
             f.write('\n')
 
         utt_dur = segs[-1][1]
@@ -291,7 +290,7 @@ def write_textgrid_file(tgf, segs):
         write_line('Object class = "TextGrid"')
         write_line('')
         write_line('xmin = 0 ')
-        write_line('xmax = %f ' % utt_dur)
+        write_line(f'xmax = {utt_dur} ')
         write_line('tiers? <exists> ')
         write_line('size = 1 ')
         write_line('item []: ')
@@ -299,19 +298,19 @@ def write_textgrid_file(tgf, segs):
         write_line('        class = "IntervalTier" ')
         write_line('        name = "speech," ')
         write_line('        xmin = 0 ')
-        write_line('        xmax = %f ' % utt_dur)
-        write_line('        intervals: size = %d ' % len(segs))
+        write_line(f'        xmax = {utt_dur} ')
+        write_line(f'        intervals: size = {len(segs)} ')
 
         # Write segments.
         for n, (onset, offset, label) in enumerate(segs):
-            write_line('        intervals [%d]:' % (n + 1))
-            write_line('            xmin = %f ' % onset)
-            write_line('            xmax = %f ' % offset)
-            write_line('            text = "%s" ' % label)
+            write_line(f'        intervals [{n+1}]:')
+            write_line(f'            xmin = {onset} ')
+            write_line(f'            xmax = {offset} ')
+            write_line(f'            text = "{label}" ')
             n += 1
 
 
-def read_script_file(fn):
+def read_script_file(scp_path):
     """Read Kaldi or HTK script file.
 
     The script file is expected to be in one of two formats:
@@ -332,7 +331,7 @@ def read_script_file(fn):
 
     Parameters
     ----------
-    fn : str
+    scp_path : Path
         Path to script file.
 
     Returns
@@ -340,26 +339,27 @@ def read_script_file(fn):
     paths : dict
         Mapping from URIs to paths.
     """
+    scp_path = Path(scp_path)
     paths = {}
-    with open(fn, 'rb') as f:
+    with open(scp_path, 'r', encoding='utf-8') as f:
         for line in f:
-            fields = line.decode('utf-8').strip().split()
+            fields = line.strip().split()
             if len(fields) > 2:
                 logger.warn(
-                    'Too many fields in line of script file "%s". Skipping.',
-                    fn)
+                    f'Too many fields in line of script file "{scp_path}".'
+                    f'Skipping.')
                 continue
-            fpath = fields[-1]
+            fpath = Path(fields[-1])
             if len(fields) == 2:
                 uri = fields[0]
             else:
-                uri = os.path.splitext(os.path.basename(fpath))[0]
+                uri = fpath.stem
                 logger.warn(
-                    'No URI specified for file "%s". '
-                    'Setting using basename: "%s".', fpath, uri)
+                    f'No URI specified for file "{fpath}". '
+                    f'Setting using basename: "{uri}".')
             if uri in paths:
                 logger.warn(
-                    'Duplicate URI "%s" detected. Skipping.', uri)
+                    f'Duplicate URI "{uri}" detected. Skipping.')
                 continue
             paths[uri] = fpath
     return paths

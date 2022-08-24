@@ -2,9 +2,6 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Miscellaneous utility functions related to audio and segmentation."""
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
 import os
 import subprocess
 
@@ -30,7 +27,7 @@ def get_dur(af):
         with open(os.devnull, 'wb') as f:
             dur = float(subprocess.check_output(cmd, stderr=f))
     except subprocess.CalledProcessError:
-        raise IOError('Error opening: %s' % af)
+        raise IOError(f'Error opening: {af}')
     return dur
 
 
@@ -74,13 +71,13 @@ def convert_to_wav(wf, af, channel=1, start=0, end=None):
                '-t', 'wav',
                wf,
                'remix', str(channel), # Extract single channel.
-               'trim', str(start), '=%s' % end,
+               'trim', str(start), f'={end}',
                'rate', '16000',
                ]
         with open(os.devnull, 'wb') as f:
             raw = subprocess.check_output(cmd, stderr=f)
     except subprocess.CalledProcessError:
-        raise IOError('Error opening: %s' % af)
+        raise IOError('Error opening: {af}')
 
 
 def concat_segs(seg_seqs, dur=None):
