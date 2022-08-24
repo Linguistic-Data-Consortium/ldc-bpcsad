@@ -40,7 +40,7 @@ def read_label_file(lf, in_sec=True, enc='utf-8'):
         of the recording.
     """
     with open(lf, 'r', encoding=enc) as f:
-        segs = [line.strip().split(None, maxsplit=3) for line in f]
+        segs = [line.strip().split()[:3] for line in f]
 
     for seg in segs:
         seg[0] = float(seg[0])
@@ -75,7 +75,7 @@ def write_label_file(lf, segs, in_sec=True, enc='utf-8'):
         Character encoding of ``lf``.
         (Default: 'utf-8')
     """
-    with open(lf, 'w' encoding=enc) as f:
+    with open(lf, 'w', encoding=enc) as f:
         for onset, offset, label in segs:
             if not in_sec:
                 onset = seconds_2_htk_units(onset)
@@ -84,7 +84,7 @@ def write_label_file(lf, segs, in_sec=True, enc='utf-8'):
             else:
                 # Fix precision at 2 as tool uses 100 ms sample rate for features.
                 line = f'{onset:.2f}\t{offset:.2f}\t{label}\n'
-            f.write(line.encode(enc))
+            f.write(line)
 
 
 def htk_units_2_seconds(t):
