@@ -2,9 +2,6 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Functions for reading and writing segmentation formats."""
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
 import os
 
 from .logging import getLogger
@@ -42,8 +39,8 @@ def read_label_file(lf, in_sec=True, enc='utf-8'):
         the onset and offset of the segment in seconds relative to the start
         of the recording.
     """
-    with open(lf, 'rb') as f:
-        segs = [line.decode(enc).strip().split()[:3] for line in f]
+    with open(lf, 'r', encoding=enc) as f:
+        segs = [line.strip().split(None, maxsplit=3) for line in f]
 
     for seg in segs:
         seg[0] = float(seg[0])
@@ -78,26 +75,25 @@ def write_label_file(lf, segs, in_sec=True, enc='utf-8'):
         Character encoding of ``lf``.
         (Default: 'utf-8')
     """
-    with open(lf, 'wb') as f:
+    with open(lf, 'w' encoding=enc) as f:
         for onset, offset, label in segs:
             if not in_sec:
                 onset = seconds_2_htk_units(onset)
                 offset = seconds_2_htk_units(offset)
-                line = '%d %d %s\n' % (onset, offset, label)
+                line = f'{onset}\t{offset}\t{label}\n'
             else:
-                line = '%.2f %.2f %s\n' % (onset, offset, label)
+                # Fix precision at 2 as tool uses 100 ms sample rate for features.
+                line = f'{onset:.2f}\t{offset:.2f}\t{label}\n'
             f.write(line.encode(enc))
 
 
 def htk_units_2_seconds(t):
-    """Convert from 100 ns units to seconds.
-    """
+    """Convert from 100 ns units to seconds."""
     return t*10.**-7
 
 
 def seconds_2_htk_units(t):
-    """Convert from seconds to 100 ns units, rounded down to nearest integer.
-    """
+    """Convert from seconds to 100 ns units."""
     return int(t*10**7)
 
 

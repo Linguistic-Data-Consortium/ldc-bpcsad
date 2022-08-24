@@ -79,8 +79,6 @@ Pitt, M. A., Dilley, L., Johnson, K., Kiesling, S., Raymond, W., Hume, E.,
   release). Columbus, OH: Department of Psychology, Ohio State University.
   http://buckeyecorpus.osu.edu/
 """
-from __future__ import print_function
-from __future__ import unicode_literals
 import argparse
 from math import log
 import os
@@ -116,7 +114,7 @@ def _segment_chunk(af, channel, start, end, htk_config):
     # Convert to WAV and trim on selected channel.
     bn = os.path.basename(af)
     uid = os.path.splitext(bn)[0]
-    wf = os.path.join(tmp_dir, '%s.wav' % uid)
+    wf = os.path.join(tmp_dir, f'{uid}.wav')
     convert_to_wav(wf, af, channel, start, end)
 
     # Segment.
@@ -286,15 +284,15 @@ def segment_file(uri, af, lab_dir, ext, htk_config, channel,
     while max_chunk_dur >= min_chunk_dur:
         try:
             logger.info(
-                'Attempting segmentation for %s with max chunk duration'
-                ' of %.2f sec', af, max_chunk_dur)
+                f'Attempting segmentation for "{af}" with max chunk duration'
+                f' of {max_chunk_dur:.2f} seconds')
             _segment_file(
                 af, lf, htk_config, channel, min_speech_dur,
                 min_nonspeech_dur, min_chunk_dur, max_chunk_dur)
             return
         except IOError:
             max_chunk_dur /= 2.
-    logger.warning('SAD failed for %s. Skipping.', af)
+    logger.warning(f'SAD failed for {af}. Skipping.')
     return
 
 
@@ -335,7 +333,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
             if line.startswith('<GCONST>') and curr_phone != 'nonspeech':
                 gconst = float(line[9:-1])
                 gconst += log(speech_scale_factor)
-                line = '<GCONST> %.6e\n' % gconst
+                line = f'<GCONST> {gconst:.6e}\n'
             g.write(line.encode('utf-8'))
 
 

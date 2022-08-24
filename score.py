@@ -12,8 +12,6 @@ To evaluate system output stored in label files ``rec1.lab``, ``rec2.lab``,
 
 which will
 """
-from __future__ import print_function
-from __future__ import unicode_literals
 import argparse
 import os
 import sys
@@ -73,8 +71,8 @@ def score_file(sys_lf, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab',
         try:
             return read_label_file(lf)
         except:
-            logger.warning('Problem loading segmentation from %s. Skipping.'
-                           % lf)
+            logger.warning(f'Problem loading segmentation from "lf". '
+                           f'Skipping.')
             return None
     sys_segs = try_load_segs(sys_lf)
     bn = os.path.basename(sys_lf)
@@ -119,10 +117,9 @@ def score_files(sys_lfs, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab'):
     fa_rate = 100*(fa_dur / ref_nonspeech_dur)
     miss_rate = 100*(miss_dur / ref_speech_dur)
     dcf = 0.25*fa_rate + 0.75*miss_rate
-    logger.info('DCF: %.2f%%, FA: %.2f%%, MISS: %.2f%%' %
-                (dcf, fa_rate, miss_rate))
+    logger.info(f'DCF: {dcf:.2f}, FA: {fa_rate:.2f}, MISS: {miss_rate:.2f}\n')
     dur = time.time() - t0
-    print('DUR: %.2f sec' % dur)
+    print(f'DUR: {dur:.2f} seconds')
     # DEBUG #
 
 

@@ -38,8 +38,6 @@ References
 - Sanders, G. (2015). "NIST OpenSAD scoring software."
   https://www.nist.gov/itl/iad/mig/nist-open-speech-activity-detection-evaluation
 """
-from __future__ import print_function
-from __future__ import unicode_literals
 import argparse
 import os
 import sys
