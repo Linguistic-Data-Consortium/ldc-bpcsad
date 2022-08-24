@@ -82,6 +82,7 @@ Pitt, M. A., Dilley, L., Johnson, K., Kiesling, S., Raymond, W., Hume, E.,
 import argparse
 from math import log
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import sys
@@ -100,43 +101,44 @@ logger = getLogger()
 
 
 class HTKConfig(object):
-    def __init__(self, phone_net_fn, macros_fn, hmmdefs_fn, config_fn,
-                 dict_fn, monophones_fn):
+    def __init__(self, phone_net_path, macros_path, hmmdefs_path, config_path,
+                 dict_path, monophones_path):
         self.__dict__.update(locals())
         del self.self
 
 
-def _segment_chunk(af, channel, start, end, htk_config):
+def _segment_chunk(audio_path, channel, start, end, htk_config):
     """Segment audio file."""
+    audio_path = Path(audio_path)
+
     # Create directory to hold intermediate segmentations.
-    tmp_dir = tempfile.mkdtemp()
+    tmp_dir = Path(tempfile.mkdtemp())
 
     # Convert to WAV and trim on selected channel.
-    bn = os.path.basename(af)
-    uid = os.path.splitext(bn)[0]
-    wf = os.path.join(tmp_dir, f'{uid}.wav')
-    convert_to_wav(wf, af, channel, start, end)
+    uri = audio_path.stem
+    wav_path = Path(tmp_dir, uri + '.wav')
+    convert_to_wav(wav_path, audio_path, channel, start, end)
 
     # Segment.
     cmd = ['HVite',
            '-T', '0',
-           '-w', htk_config.phone_net_fn,
-           '-l', tmp_dir,
-           '-H', htk_config.macros_fn,
-           '-H', htk_config.hmmdefs_fn,
-           '-C', htk_config.config_fn,
+           '-w', str(htk_config.phone_net_path),
+           '-l', str(tmp_dir),
+           '-H', str(htk_config.macros_path),
+           '-H', str(htk_config.hmmdefs_path),
+           '-C', str(htk_config.config_path),
            '-p', '-0.3',
            '-s', '5.0',
            '-y', 'lab',
-           htk_config.dict_fn,
-           htk_config.monophones_fn,
-           wf,
+           str(htk_config.dict_path),
+           str(htk_config.monophones_path),
+           wav_path,
           ]
     with open(os.devnull, 'wb') as f:
         subprocess.call(cmd, stdout=f, stderr=f)
     try:
-        lf = os.path.join(tmp_dir, uid + '.lab')
-        segs = read_label_file(lf, in_sec=False)
+        lab_path = Path(tmp_dir, uri + '.lab')
+        segs = read_label_file(lab_path, in_sec=False)
     except IOError:
         raise IOError
     finally:
@@ -145,22 +147,22 @@ def _segment_chunk(af, channel, start, end, htk_config):
     return segs
 
 
-def _segment_file(af, lf, htk_config, channel, min_speech_dur=0.500,
+def _segment_file(audio_path, lab_path, htk_config, channel, min_speech_dur=0.500,
                   min_nonspeech_dur=0.300, min_chunk_dur=10.0,
                   max_chunk_dur=3600.):
     """Perform speech activity detection on a single audio file.
 
     The resulting segmentation will be saved in an HTK label file in
-    ``lab_dir`` with the same name as ``af`` but file extension ``ext``.
+    ``lab_dir`` with the same name as ``audio_path`` but file extension ``ext``.
     For instance, ``segment_file('A.wav', 'results', '.lab', htk_config)``
     will create a file ``results/A.lab`` containing the segmentation.
 
     Parameters
     ----------
-    af : str
+    audio_path : Path
         Path to audio file on which SAD is to be run.
 
-    lf : str
+    lab_path : Path
         Path to output label file.
 
     htk_config : HTKConfig
@@ -187,8 +189,11 @@ def _segment_file(af, lf, htk_config, channel, min_speech_dur=0.500,
         splitting long recordings.
         (Default: 3600.0)
     """
+    audio_path = Path(audio_path)
+    lab_path = Path(lab_path)
+
     # Split recording into chunks of at most 3000 seconds.
-    rec_dur = get_dur(af)
+    rec_dur = get_dur(audio_path)
     if rec_dur > max_chunk_dur:
         bounds = list(np.arange(0, rec_dur, max_chunk_dur))
     else:
@@ -204,7 +209,7 @@ def _segment_file(af, lf, htk_config, channel, min_speech_dur=0.500,
     # Segment chunks.
     seg_seqs = []
     for rec_onset, rec_offset in rec_bounds:
-        segs = _segment_chunk(af, channel, rec_onset, rec_offset,
+        segs = _segment_chunk(audio_path, channel, rec_onset, rec_offset,
                               htk_config)
         dur = rec_offset - rec_onset
         segs[-1][1] = dur
@@ -226,16 +231,16 @@ def _segment_file(af, lf, htk_config, channel, min_speech_dur=0.500,
     segs = merge_segs(segs)
 
     # Write.
-    write_label_file(lf, segs)
+    write_label_file(lab_path, segs)
 
 
-def segment_file(uri, af, lab_dir, ext, htk_config, channel,
+def segment_file(uri, audio_path, lab_dir, ext, htk_config, channel,
                  min_speech_dur=0.500, min_nonspeech_dur=0.300,
                  min_chunk_dur=10.0, max_chunk_dur=3600.):
     """Perform speech activity detection on a single audio file.
 
     The resulting segmentation will be saved in an HTK label file in
-    ``lab_dir`` with the same name as ``af`` but file extension ``ext``.
+    ``lab_dir`` with the same name as ``audio_path`` but file extension ``ext``.
     For instance, ``segment_file('A.wav', 'results', '.lab', htk_config)``
     will create a file ``results/A.lab`` containing the segmentation.
 
@@ -244,10 +249,10 @@ def segment_file(uri, af, lab_dir, ext, htk_config, channel,
     uri : str
         Uniform resource identifier (URI) for audio file.
 
-    af : str
+    audio_path : Path
         Path to audio file on which SAD is to be run.
 
-    lab_dir : str
+    lab_dir : Path
         Path to output directory for label file.
 
     ext : str
@@ -277,36 +282,38 @@ def segment_file(uri, af, lab_dir, ext, htk_config, channel,
         splitting long recordings.
         (Default: 3600.0)
     """
-    lf = os.path.join(lab_dir, uri + ext)
-    rec_dur = get_dur(af)
+    audio_path = Path(audio_path)
+    lab_dir = Path(lab_dir)
+    lab_path = Path(lab_dir, audio_path.stem + ext)
+    rec_dur = get_dur(audio_path)
     max_chunk_dur = min(max_chunk_dur, rec_dur)
     min_chunk_dur = min(min_chunk_dur, rec_dur)
     while max_chunk_dur >= min_chunk_dur:
         try:
             logger.info(
-                f'Attempting segmentation for "{af}" with max chunk duration'
+                f'Attempting segmentation for "{audio_path}" with max chunk duration'
                 f' of {max_chunk_dur:.2f} seconds')
             _segment_file(
-                af, lf, htk_config, channel, min_speech_dur,
+                audio_path, lab_path, htk_config, channel, min_speech_dur,
                 min_nonspeech_dur, min_chunk_dur, max_chunk_dur)
             return
         except IOError:
             max_chunk_dur /= 2.
-    logger.warning(f'SAD failed for {af}. Skipping.')
+    logger.warning(f'SAD failed for {audio_path}. Skipping.')
     return
 
 
-def write_hmmdefs(oldf, newf, speech_scale_factor=1):
+def write_hmmdefs(old_hmmdefs_path, new_hmmdefs_path, speech_scale_factor=1):
     """Modify an HTK hmmdefs file in which speech model acoustic likelihoods
     are scaled by ``speech_scale_factor``.
 
     Parameters
     ----------
-    oldf : str
+    old_hmmdefs_path : Path
         Path to original HTK hmmdefs file.
 
-    newf : str
-        Path for modified HTK hmmdefs file. If ``newf`` already exists, it
+    new_hmmsdefs_path : str
+        Path for modified HTK hmmdefs file. If file already exists, it
         will be overwritten.
 
     speech_scale_factor : float, optional
@@ -315,10 +322,13 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
         speech segments.
         (Default: 1)
     """
-    with open(oldf, 'r', encoding='utf-8') as f:
+    old_hmm_defs_path = Path(old_hmmdefs_path)
+    new_hmmdefs_path = Path(new_hmmdefs_path)
+
+    with open(old_hmmdefs_path, 'r', encoding='utf-8') as f:
         lines = [line for line in f]
 
-    with open(newf, 'w', encoding='utf-8') as g:
+    with open(new_hmmdefs_path, 'w', encoding='utf-8') as g:
         # Header.
         for line in lines[:3]:
             g.write(line)
@@ -338,7 +348,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
 
 
 def main():
-    script_dir = os.path.dirname(__file__)
+    script_dir = Path(__file__).parent
 
     # Parse command line args.
     parser = argparse.ArgumentParser(
@@ -346,12 +356,13 @@ def main():
         add_help=True,
         usage='%(prog)s [options] [afs]')
     parser.add_argument(
-        'afs', nargs='*', help='audio files to be processed')
+        'audio_path', metavar='audio-path', type=Path, nargs='*',
+        help='audio files to be processed')
     parser.add_argument(
-        '-S', nargs=None, default=None, metavar='STR', dest='scpf',
+        '-S', metavar='PATH', type=Path, dest='scp_path',
         help='set script file (Default: %(default)s)')
     parser.add_argument(
-        '-L', nargs=None, default='./', metavar='STR', dest='lab_dir',
+        '-L', metavar='PATH', type=Path, dest='lab_dir', default=Path.cwd(),
         help="set output label dir (Default: %(default)s)")
     parser.add_argument(
         '-X', nargs=None, default='.lab', metavar='STR', dest='ext',
@@ -384,32 +395,31 @@ def main():
     args = parser.parse_args()
 
     # Load paths from script file.
-    if args.scpf is not None:
-        audio_paths = read_script_file(args.scpf)
-    elif args.afs:
-        audio_paths = {os.path.splitext(os.path.basename(fn))[0] : fn
-                       for fn in args.afs}
+    if args.scp_path is not None:
+        audio_paths = read_script_file(args.scp_path)
+    elif args.audio_path:
+        audio_paths = {audio_path.name : audio_path for audio_path in args.audio_path}
     else:
         return
     n_jobs = min(len(audio_paths), args.n_jobs)
 
     # Modify GMM weights to account for speech scale factor.
-    old_hmmdefs_fn = os.path.join(script_dir, 'model', 'hmmdefs')
-    new_hmmdefs_fn = tempfile.mktemp()
-    write_hmmdefs(old_hmmdefs_fn, new_hmmdefs_fn, args.speech_scale_factor)
+    old_hmmdefs_path = Path(script_dir, 'model', 'hmmdefs')
+    new_hmmdefs_path = Path(tempfile.mktemp())
+    write_hmmdefs(old_hmmdefs_path, new_hmmdefs_path, args.speech_scale_factor)
 
     # Perform SAD on files in parallel.
-    htk_config = HTKConfig(os.path.join(script_dir, 'model', 'phone_net'),
-                           os.path.join(script_dir, 'model', 'macros'),
-                           new_hmmdefs_fn,
-                           os.path.join(script_dir, 'model', 'config'),
-                           os.path.join(script_dir, 'model', 'dict'),
-                           os.path.join(script_dir, 'model', 'monophones'))
+    htk_config = HTKConfig(Path(script_dir, 'model', 'phone_net'),
+                           Path(script_dir, 'model', 'macros'),
+                           new_hmmdefs_path,
+                           Path(script_dir, 'model', 'config'),
+                           Path(script_dir, 'model', 'dict'),
+                           Path(script_dir, 'model', 'monophones'))
     def kwargs_gen():
         for uri in sorted(audio_paths.keys()):
-            af = audio_paths[uri]
+            audio_path = audio_paths[uri]
             yield dict(
-                uri=uri, af=af, lab_dir=args.lab_dir, ext=args.ext,
+                uri=uri, audio_path=audio_path, lab_dir=args.lab_dir, ext=args.ext,
                 htk_config=htk_config, channel=args.channel,
                 min_speech_dur=args.min_speech_dur,
                 min_nonspeech_dur=args.min_nonspeech_dur)
@@ -417,7 +427,7 @@ def main():
     Parallel(n_jobs=n_jobs, verbose=0)(f(**kwargs) for kwargs in kwargs_gen())
 
     # Remove temporary hmmdefs file.
-    os.remove(new_hmmdefs_fn)
+    new_hmmdefs_path.unlink()
 
 
 if __name__ == '__main__':

@@ -39,7 +39,7 @@ References
   https://www.nist.gov/itl/iad/mig/nist-open-speech-activity-detection-evaluation
 """
 import argparse
-import os
+from pathlib import Path
 import sys
 
 from joblib import delayed, Parallel
@@ -60,7 +60,7 @@ FORMAT_TO_WRITE_FN = {'opensad_ref' : write_opensad_reference_file,
                       'tdf' : write_tdf_file,
                       'tg' : write_textgrid_file}
 
-def convert_label_file(output_dir, lf, fmt):
+def convert_label_file(output_dir, lab_path, fmt):
     """Convert label file to specified formats.
 
     Allowed formats are:
@@ -72,39 +72,39 @@ def convert_label_file(output_dir, lf, fmt):
 
     Parameters
     ----------
-    output_dir : str
+    output_dir : Path
         Output directory for new file.
 
-    lf : str
+    lab_path : Path
         Path to label file to be converted.
 
     fmt : str
         Format to convet to. Must be one of {'opensad_ref', 'opensad_sys',
         'tdf', 'tg'}.
     """
+    output_dir = Path(output_dir)
+    lab_path = Path(lab_path)
     ext = FORMAT_TO_EXT[fmt]
     write_fn = FORMAT_TO_WRITE_FN[fmt]
-    segs = read_label_file(lf)
-    bn = os.path.basename(lf)
-    output_fn = os.path.join(output_dir, os.path.splitext(bn)[0] + ext)
-    write_fn(output_fn, segs)
+    segs = read_label_file(lab_path)
+    output_path = Path(output_dir, lab_path.stem + ext)
+    write_fn(output_path, segs)
 
 
 if __name__ == '__main__':
-    script_dir = os.path.dirname(__file__)
+    script_dir = Path(__file__).parent
 
     # Parse command line args.
     parser = argparse.ArgumentParser(
-        description='Convert format of SAD output.',
-        add_help=False,
-        usage='%(prog)s [options] [lfs]')
+        description='Convert format of SAD output.', add_help=False)
     parser.add_argument(
-        'lfs', nargs='*', help='label files to be processed')
+        'label', type=Path, nargs='*', dest='lab_paths',
+        help='label file to be processed')
     parser.add_argument(
-        '-S', nargs=None, default=None, metavar='STR', dest='scpf',
+        '-S', metavar='PATH', type=Path, dest='scp_path',
         help='set script file (Default: %(default)s)')
     parser.add_argument(
-        '-L', nargs=None, default='./', metavar='STR', dest='output_dir',
+        '-L', metavar='PATH', type=Path, default=Path.cwd(), dest='output_dir',
         help='set output directory (Default: %(default)s)')
     parser.add_argument(
         '--format', nargs=None, default='tdf',
@@ -127,15 +127,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Load paths from script file.
-    if not args.scpf is None:
-        with open(args.scpf, 'r', encoding='utf-8') as f:
-            args.lfs = [line.strip() for line in f]
+    if not args.scp_path is None:
+        with open(args.scp_path, 'r', encoding='utf-8') as f:
+            args.lab_paths = [Path(line.strip()) for line in f]
 
-    n_jobs = min(len(args.lfs), args.n_jobs)
+    n_jobs = min(len(args.lab_paths), args.n_jobs)
 
     # Convert in parallel.
     f = delayed(convert_label_file)
     def kwargs_gen():
-        for lf in args.lfs:
-            yield dict(output_dir=args.output_dir, lf=lf, fmt=args.format)
+        for lab_path in args.lab_paths:
+            yield dict(output_dir=args.output_dir, lab_path=lab_path, fmt=args.format)
     Parallel(n_jobs=n_jobs, verbose=0)(f(**kwargs) for kwargs in kwargs_gen())
