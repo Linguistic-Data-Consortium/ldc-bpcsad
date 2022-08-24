@@ -45,7 +45,7 @@ import sys
 from joblib import delayed, Parallel
 
 from seglib import __version__ as VERSION
-from seglib.io import (read_label_file, write_label_file,
+from seglib.io import (read_label_file,
                        write_opensad_reference_file, write_opensad_system_file,
                        write_tdf_file, write_textgrid_file)
 
@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
     # Load paths from script file.
     if not args.scpf is None:
-        with open(args.scpf, 'rb') as f:
+        with open(args.scpf, 'r', encoding='utf-8') as f:
             args.lfs = [line.strip() for line in f]
 
     n_jobs = min(len(args.lfs), args.n_jobs)

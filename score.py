@@ -44,7 +44,7 @@ def score_file(sys_lf, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab',
     ref_lab_ext : str, optional
         Reference label file extension.
         (Default: '.lab')
-    
+
     step : float, optional
         Step size in seconds.
         (Default: 0.001)
@@ -55,7 +55,7 @@ def score_file(sys_lf, ref_lab_dir, sys_lab_ext='.lab', ref_lab_ext='.lab',
         Total speech duration in seconds in reference segmentation.
 
     ref_nonspeech_dur : float
-        Total nonspeech duration in seconds in reference segmentation. 
+        Total nonspeech duration in seconds in reference segmentation.
 
     fa_dur : float
         Total duration in seconds of system false alarms.
@@ -154,7 +154,7 @@ if __name__ == '__main__':
 
     # Load paths from script file.
     if not args.scpf is None:
-        with open(args.scpf, 'rb') as f:
+        with open(args.scpf, 'r', encoding='utf-8') as f:
             args.sys_lfs = [line.strip() for line in f]
 
     # Score.

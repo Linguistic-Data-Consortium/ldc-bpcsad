@@ -315,13 +315,13 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
         speech segments.
         (Default: 1)
     """
-    with open(oldf, 'rb') as f:
-        lines = [line.decode('utf-8') for line in f]
+    with open(oldf, 'r', encoding='utf-8') as f:
+        lines = [line for line in f]
 
-    with open(newf, 'wb') as g:
+    with open(newf, 'w', encoding='utf-8') as g:
         # Header.
         for line in lines[:3]:
-            g.write(line.encode('utf-8'))
+            g.write(line)
 
         # Model definitions.
         curr_phone = None
@@ -334,7 +334,7 @@ def write_hmmdefs(oldf, newf, speech_scale_factor=1):
                 gconst = float(line[9:-1])
                 gconst += log(speech_scale_factor)
                 line = f'<GCONST> {gconst:.6e}\n'
-            g.write(line.encode('utf-8'))
+            g.write(line)
 
 
 def main():

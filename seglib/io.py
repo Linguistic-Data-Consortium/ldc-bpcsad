@@ -125,7 +125,7 @@ def write_opensad_system_file(fn, segs, test_set='test_set'):
     - Sanders, G. (2015). "NIST OpenSAD scoring software."
       https://www.nist.gov/itl/iad/mig/nist-open-speech-activity-detection-evaluation
     """
-    with open(fn, 'wb') as f:
+    with open(fn, 'w', encoding='utf-8') as f:
         bn = os.path.basename(fn)
         fid = os.path.splitext(bn)[0]
         for onset, offset, label in segs:
@@ -135,13 +135,13 @@ def write_opensad_system_file(fn, segs, test_set='test_set'):
                     'test', # Test ID.
                     'SAD', # Task.
                     fid, # File ID.
-                    '%.3f' % onset, # Interval start (seconds).
-                    '%.3f' % offset, # Interval end (seconds).
+                    f'{onset:.3f}', # Interval start (seconds).
+                    f'{offset:.3f}', # Interval end (seconds).
                     label, # Type (one of {speech, non-speech}).
                     '0.5', # Confidence.
             ]
             line = '\t'.join(cols)
-            f.write(line.encode('utf-8'))
+            f.write(line)
             f.write('\n')
 
 
@@ -173,21 +173,21 @@ def write_opensad_reference_file(fn, segs, test_set='test_set'):
     - Sanders, G. (2015). "NIST OpenSAD scoring software."
       https://www.nist.gov/itl/iad/mig/nist-open-speech-activity-detection-evaluation
     """
-    with open(fn, 'wb') as f:
+    with open(fn, 'w', encoding='utf-8') as f:
         bn = os.path.basename(fn)
         fid = os.path.splitext(bn)[0]
         for onset, offset, label in segs:
             label = 'NS' if label == 'nonspeech' else 'S'
             cols = ['fake_testDef.xml', # Audio filename.
                     '1', # Channel ID.
-                    '%.3f' % onset, # Interval start (seconds).
-                    '%.3f' % offset, # Interval end (seconds).
+                    f'{onset:.3f}',  # Interval start (seconds).
+                    f'{offset:.3f}',  # Interval end (seconds).
                     label, # Type (one of {S, NS, T}).
                     'manual', # Confidence.
             ]
             cols.extend(['']*6)
             line = '\t'.join(cols)
-            f.write(line.encode('utf-8'))
+            f.write(line)
             f.write('\n')
 
 
@@ -212,9 +212,9 @@ def write_tdf_file(tdf_fn, segs):
     - LDC. (2007). "Using XTrans for broadcast transcription: a user manual."
       https://www.ldc.upenn.edu/sites/www.ldc.upenn.edu/files/xtrans-manual-v3.0.pdf
     """
-    with open(tdf_fn, 'wb') as f:
+    with open(tdf_fn, 'w', encoding='utf-8') as f:
         def write_line(line):
-            f.write(line.encode('utf-8'))
+            f.write(line)
             f.write('\r\n') # This is what Xtrans does...
 
         # Write header.
@@ -275,9 +275,9 @@ def write_textgrid_file(tgf, segs):
     segs : list of tuple
         Segments.
     """
-    with open(tgf, 'wb') as f:
+    with open(tgf, 'w', encoding='utf-8') as f:
         def write_line(line):
-            f.write(line.encode('utf-8'))
+            f.write(line)
             f.write('\n')
 
         utt_dur = segs[-1][1]
@@ -287,7 +287,7 @@ def write_textgrid_file(tgf, segs):
         write_line('Object class = "TextGrid"')
         write_line('')
         write_line('xmin = 0 ')
-        write_line('xmax = %f ' % utt_dur)
+        write_line(f'xmax = {utt_dur} ')
         write_line('tiers? <exists> ')
         write_line('size = 1 ')
         write_line('item []: ')
@@ -295,15 +295,15 @@ def write_textgrid_file(tgf, segs):
         write_line('        class = "IntervalTier" ')
         write_line('        name = "speech," ')
         write_line('        xmin = 0 ')
-        write_line('        xmax = %f ' % utt_dur)
-        write_line('        intervals: size = %d ' % len(segs))
+        write_line(f'        xmax = {utt_dur} ')
+        write_line(f'        intervals: size = {len(segs)} ')
 
         # Write segments.
         for n, (onset, offset, label) in enumerate(segs):
-            write_line('        intervals [%d]:' % (n + 1))
-            write_line('            xmin = %f ' % onset)
-            write_line('            xmax = %f ' % offset)
-            write_line('            text = "%s" ' % label)
+            write_line(f'        intervals [{n+1}]:')
+            write_line(f'            xmin = {onset} ')
+            write_line(f'            xmax = {offset} ')
+            write_line(f'            text = "{label}" ')
             n += 1
 
 
@@ -337,13 +337,13 @@ def read_script_file(fn):
         Mapping from URIs to paths.
     """
     paths = {}
-    with open(fn, 'rb') as f:
+    with open(fn, 'r', encoding='utf-8') as f:
         for line in f:
-            fields = line.decode('utf-8').strip().split()
+            fields = line.strip().split()
             if len(fields) > 2:
                 logger.warn(
-                    'Too many fields in line of script file "%s". Skipping.',
-                    fn)
+                    f'Too many fields in line of script file "{fn}".'
+                    f'Skipping.')
                 continue
             fpath = fields[-1]
             if len(fields) == 2:
@@ -351,11 +351,11 @@ def read_script_file(fn):
             else:
                 uri = os.path.splitext(os.path.basename(fpath))[0]
                 logger.warn(
-                    'No URI specified for file "%s". '
-                    'Setting using basename: "%s".', fpath, uri)
+                    f'No URI specified for file "{fpath}". '
+                    f'Setting using basename: "{uri}".')
             if uri in paths:
                 logger.warn(
-                    'Duplicate URI "%s" detected. Skipping.', uri)
+                    f'Duplicate URI "{uri}" detected. Skipping.')
                 continue
             paths[uri] = fpath
     return paths
