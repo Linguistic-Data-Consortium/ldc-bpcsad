@@ -80,6 +80,7 @@ Pitt, M. A., Dilley, L., Johnson, K., Kiesling, S., Raymond, W., Hume, E.,
   http://buckeyecorpus.osu.edu/
 """
 import argparse
+from dataclasses import dataclass
 from math import log
 import os
 from pathlib import Path
@@ -100,11 +101,15 @@ from seglib.utils import (concat_segs, convert_to_wav, elim_short_segs,
 logger = getLogger()
 
 
-class HTKConfig(object):
-    def __init__(self, phone_net_path, macros_path, hmmdefs_path, config_path,
-                 dict_path, monophones_path):
-        self.__dict__.update(locals())
-        del self.self
+@dataclass
+class HTKConfig:
+    """TODO"""
+    phone_net_path: Path
+    macros_path: Path
+    hmmdefs_path: Path
+    config_path: Path
+    dict_path: Path
+    monophones_path: Path
 
 
 def _segment_chunk(audio_path, channel, start, end, htk_config):
