@@ -7,7 +7,6 @@ from pathlib import Path
 from .logging import getLogger
 
 __all__ = ['read_label_file', 'write_label_file', 'read_script_file',
-           'write_opensad_reference_file', 'write_opensad_system_file',
            'write_tdf_file', 'write_textgrid_file']
 
 
@@ -97,99 +96,6 @@ def htk_units_2_seconds(t):
 def seconds_2_htk_units(t):
     """Convert from seconds to 100 ns units."""
     return int(t*10**7)
-
-
-def write_opensad_system_file(fpath, segs, test_set='test_set'):
-    """Write segments to file in SYSTEM format expected by NIST OpenSAD eval
-    tool.
-
-    The output file is in the SAD system format expected by the OpenSAD eval
-    script ``scoreFile_SAD.pl`` as documented in the OpenSAD eval plan
-    (Figure 3).
-
-    Parameters
-    ----------
-    fpath : Path
-        Path to output OpenSAD SYSTEM file.
-
-    segs : list of tuple
-        Segments.
-
-    test_set : str, optional
-        Test set ID. This goes into column 2 of the NIST OpenSAD file.
-        (Default: 'test_set')
-
-    References
-    ----------
-    - NIST. (2015). "Evaluation plan for the NIST open evaluation of speech
-      activity detection (OpenSAD15)."
-      https://www.nist.gov/sites/default/files/documents/itl/iad/mig/Open_SAD_Eval_Plan_v10.pdf
-    - Sanders, G. (2015). "NIST OpenSAD scoring software."
-      https://www.nist.gov/itl/iad/mig/nist-open-speech-activity-detection-evaluation
-    """
-    fpath = Path(fpath)
-    with open(fpath, 'w', encoding='utf-8') as f:
-        uri = fpath.stem
-        for onset, offset, label in segs:
-            label = 'non-speech' if label == 'nonspeech' else label
-            cols = ['fake_testDef.xml', # Test Definition File.
-                    test_set, # TestSet ID.
-                    'test', # Test ID.
-                    'SAD', # Task.
-                    uri, # File ID.
-                    f'{onset:.3f}', # Interval start (seconds).
-                    f'{offset:.3f}', # Interval end (seconds).
-                    label, # Type (one of {speech, non-speech}).
-                    '0.5', # Confidence.
-            ]
-            line = '\t'.join(cols)
-            f.write(line)
-            f.write('\n')
-
-
-def write_opensad_reference_file(fpath, segs, test_set='test_set'):
-    """Write segments to file in REFERENCE format expected by NIST OpenSAD eval
-    tool.
-
-    The output file is in the SAD reference format expected by the OpenSAD eval
-    script ``scoreFile_SAD.pl`` as documented in the OpenSAD eval plan
-    (Figure 4).
-
-    Parameters
-    ----------
-    fpath : Path
-        Output path for OpenSAD REFERENCE file.
-
-    segs : list of tuple
-        Segments.
-
-    test_set : str, optional
-        Test set ID. This goes into column 2 of the NIST OpenSAD file.
-        (Default: 'test_set')
-
-    References
-    ----------
-    - NIST. (2015). "Evaluation plan for the NIST open evaluation of speech
-      activity detection (OpenSAD15)."
-      https://www.nist.gov/sites/default/files/documents/itl/iad/mig/Open_SAD_Eval_Plan_v10.pdf
-    - Sanders, G. (2015). "NIST OpenSAD scoring software."
-      https://www.nist.gov/itl/iad/mig/nist-open-speech-activity-detection-evaluation
-    """
-    fpath = Path(fpath)
-    with open(fpath, 'w', encoding='utf-8') as f:
-        for onset, offset, label in segs:
-            label = 'NS' if label == 'nonspeech' else 'S'
-            cols = ['fake_testDef.xml', # Audio filename.
-                    '1', # Channel ID.
-                    f'{onset:.3f}',  # Interval start (seconds).
-                    f'{offset:.3f}',  # Interval end (seconds).
-                    label, # Type (one of {S, NS, T}).
-                    'manual', # Confidence.
-            ]
-            cols.extend(['']*6)
-            line = '\t'.join(cols)
-            f.write(line)
-            f.write('\n')
 
 
 def write_tdf_file(tdf_path, segs):
