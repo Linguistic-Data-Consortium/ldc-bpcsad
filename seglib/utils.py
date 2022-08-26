@@ -5,8 +5,8 @@
 import os
 import subprocess
 
-__all__ = ['concat_segs', 'convert_to_wav', 'elim_short_segs', 'get_dur',
-           'merge_segs']
+__all__ = ['arange', 'concat_segs', 'convert_to_wav', 'elim_short_segs',
+           'get_dur', 'merge_segs']
 
 
 def get_dur(af):
@@ -75,7 +75,7 @@ def convert_to_wav(wf, af, channel=1, start=0, end=None):
                'rate', '16000',
                ]
         with open(os.devnull, 'wb') as f:
-            raw = subprocess.check_output(cmd, stderr=f)
+            subprocess.check_output(cmd, stderr=f)
     except subprocess.CalledProcessError:
         raise IOError('Error opening: {af}')
 
@@ -167,3 +167,35 @@ def elim_short_segs(segs, target_lab='nonspeech', replace_lab='speech',
         if label == target_lab and dur < min_dur:
             seg[-1] = replace_lab
     return segs
+
+
+def arange(start, stop, step=1):
+    """Return evenly spaced values on the interval `[start, stop)`.
+
+    Values are genreated on the half-open interval `[start, stop)`, starting
+    with `start` and incrementing by `step` after each value.
+
+    Mimics behaviour of `numpy.arange`.
+
+    Parameters
+    ----------
+    start : float
+        Start of interval.
+
+    stop : float
+        End of interval.
+
+    step : float
+        Spacing between values.
+        (Default: 1)
+    """
+    if stop <= start:
+        return []
+    vals = [start]
+    val = vals[0]
+    while val < stop:
+        val += step
+        if val >= stop:
+            break
+        vals.append(val)
+    return vals
