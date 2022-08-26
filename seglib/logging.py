@@ -1,38 +1,25 @@
-# Copyright (c) 2012-2017, Trustees of the University of Pennsylvania
-# Authors: nryant@ldc.upenn.edu (Neville Ryant)
-# License: BSD 2-clause
-"""Lightweight logging module."""
+"""Logging utilities."""
 import logging
 import sys
 
+from tqdm import tqdm
 
-__all__ = ['getLogger']
-
-
-def getLogger(name=None):
-    """Return new logger instance."""
-    logger = logging.getLogger(name)
-    if name is None:
-        configure_logger(logger)
-    return logger
+__all__ = ['getLogger', 'setup_logger', 'CustomFormatter',
+           'CustomStreamHandler']
 
 
-class CustomFormatter(logging.Formatter):
-    _info_fmt = '%(message)s'
-    _fmt = '%(levelname)s: %(message)s'
-    def __init__(self):
-        logging.Formatter.__init__(self)
-
-    def format(self, record):
-        record.message = record.getMessage()
-        if record.levelno == logging.INFO:
-            s = CustomFormatter._info_fmt % record.__dict__
-        else:
-            s = CustomFormatter._fmt % record.__dict__
-        return s
+ERROR = logging.ERROR
+WARN = logging.WARN
+WARNING = logging.WARNING
+INFO = logging.INFO
+DEBUG = logging.DEBUG
+LEVELS = [ERROR, WARN, INFO, DEBUG]
 
 
 class CustomStreamHandler(logging.Handler):
+    """Mimics ``logging.StreamHandler``, but outputs WARN/ERROR to STDERR and
+    all other levels to STDOUT.
+    """
     def __init__(self, stdout=None, stderr=None, formatter=None):
         logging.Handler.__init__(self)
         self.stdout = sys.stdout if stdout is None else stdout
@@ -47,13 +34,12 @@ class CustomStreamHandler(logging.Handler):
     def emit(self, record):
         try:
             msg = self.format(record)
-            if record.levelno > logging.INFO:
+            if record.levelno > INFO:
                 stream = self.stderr
             else:
                 stream = self.stdout
-            fs = '%s\n'
-            msg = fs % msg
-            stream.write(msg)
+            msg = f'{msg}'
+            tqdm.write(msg, file=stream)
             self.flush()
         except (KeyboardInterrupt, SystemExit):
             raise
@@ -61,34 +47,86 @@ class CustomStreamHandler(logging.Handler):
             self.handleError(record)
 
 
-def configure_logger(logger, debug=False, stdout=None, stderr=None):
-    """Configure logger to output logging modules to console via
-    stdout and stderr.
+class CustomFormatter(logging.Formatter):
+    """Formatter with different formats for each logging level.
+
     Parameters
     ----------
-    logger : logging.Logger
-        Logger instance to configure.
-    debug : bool, optional
-        If True, DEBUG level messages output to stdout.
+    include_date : bool, optional
+        If True, include date in logged messages.
         (Default: False)
-    stdout : file handle, optional
-        Stream to which to write DEBUG and INFO messages.
-        (Default: sys.stdout)
-    stderr : file handle, optional
-        Stream to which to write WARNING, ERROR, and CRITICAL messages.
-        (Default: sys.stderr)
+
+    include_name : bool, optional
+        If True, include logger name named in logged messages,
+        (Default: False)
+
+    Attributes
+    ----------
+    _levelno_to_fmt : dict
+        Mapping from level numbers to format strings.
     """
-    # Set the log level of logger (either to DEBUG or INFO).
-    level = logging.DEBUG if debug else logging.INFO
+    def __init__(self, include_date=False, include_name=False):
+        logging.Formatter.__init__(self, datefmt='%Y-%m-%d %H:%M:%S')
+        self.include_date = include_date
+        self.include_name = include_name
+        def expand_fmt(fmt):
+            if include_name:
+                fmt = '%(name)s ' + fmt
+            if include_date:
+                fmt = '%(asctime)s ' + fmt
+            return fmt
+        self._levelno_to_fmt = {
+            ERROR : expand_fmt('ERROR: %(message)s'),
+            WARN : expand_fmt('WARNING: %(message)s'),
+            WARNING : expand_fmt('WARNING: %(message)s'),
+            INFO : expand_fmt('%(message)s'),
+	    DEBUG : expand_fmt('%(message)s'),
+            }
+
+    def format(self, record):
+        orig_fmt = self._style._fmt
+        self._style._fmt = self._levelno_to_fmt.get(record.levelno, orig_fmt)
+        result = logging.Formatter.format(self, record)
+        self._style._fmt = orig_fmt
+        return result
+
+
+def getLogger(name=None):
+    """Return a logger with the specified name, creating it if necessary.
+    If no name is specified, return the root logger.
+    """
+    return logging.getLogger(name)
+
+
+def setup_logger(logger, include_date=False, include_name=False, level=INFO,
+                 output_to_stdout=False):
+    """Setup logger with appropriate handlers.
+
+    Should only ever be called on root logger.
+
+    Parameters
+    ----------
+    include_date : bool, optional
+        If True, include date in logged messages.
+        (Default: False)
+
+    include_name : bool, optional
+        If True, include logger name in logged messages,
+        (Default: False)
+
+    level : int, optional
+        Logging level.
+        (Default: INFO)
+
+    output_to_stdout : bool, optional
+        If True, output all messages to STDOUT. Otherwise, only INFO will be
+        output to STDOUT and all other levels to STDERR.
+    """
     logger.setLevel(level)
-
-    # Get rid of any extant logging handlers that are installed.
-    while logger.handlers:
-        logger.handlers.pop()
-
-    # Install custom-configured handler and formatter.
-    fmt = CustomFormatter()
-    handler = logging.Handler()
-    handler = CustomStreamHandler(stdout=stdout, stderr=stderr,
-                                  formatter=fmt)
+    formatter = CustomFormatter(include_date, include_name)
+    stdout = sys.stdout
+    stderr = sys.stdout if output_to_stdout else sys.stderr
+    handler = CustomStreamHandler(
+        formatter=formatter, stdout=stdout, stderr=stderr)
+    logger.handlers = []
     logger.addHandler(handler)
