@@ -10,10 +10,11 @@ import shutil
 import subprocess
 import tempfile
 
+import numpy as np
 import soundfile as sf
 
 from .io import read_label_file
-from .utils import (arange, concat_segs, elim_short_segs, merge_segs,
+from .utils import (concat_segs, elim_short_segs, merge_segs,
                     resample)
 
 __all__ = ['HTKConfig', 'segment_file']
@@ -151,7 +152,7 @@ def segment_file(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
         try:
             # Split recording into chunks of at most 3000 seconds.
             if rec_dur > max_chunk_dur:
-                bounds = arange(0, rec_dur, max_chunk_dur)
+                bounds = np.arange(0, rec_dur, max_chunk_dur)
                 suffix_dur = rec_dur - bounds[-1]
                 if suffix_dur < min_chunk_dur:
                     # Absorb remainder of recording into final chunk.

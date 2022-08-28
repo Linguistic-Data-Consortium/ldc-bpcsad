@@ -2,85 +2,10 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Miscellaneous utility functions related to audio and segmentation."""
-import os
-import subprocess
-
 import numpy as np
 import scipy.signal
 
-__all__ = ['arange', 'concat_segs', 'convert_to_wav', 'elim_short_segs',
-           'get_dur', 'merge_segs', 'resample']
-
-
-def get_dur(af):
-    """Return duration of audio file.
-
-    Parameters
-    ----------
-    af : str
-        Path to audio file. May be in any format understood by SoX.
-
-    Returns
-    -------
-    dur : float
-        Duration of audio file (seconds).
-    """
-    try:
-        cmd = ['soxi', '-D', af]
-        with open(os.devnull, 'wb') as f:
-            dur = float(subprocess.check_output(cmd, stderr=f))
-    except subprocess.CalledProcessError:
-        raise IOError(f'Error opening: {af}')
-    return dur
-
-
-def convert_to_wav(wf, af, channel=1, start=0, end=None):
-    """Convert audio file to 16 kHz, 16 bit WAV file.
-
-    Parameters
-    ----------
-    wf : str
-       Output WAV file.
-
-    af : str
-        Path to audio file containing the recording. May be in any format
-        understood by SoX.
-
-    target_sr : int, optional
-        Target sample rate (Hz), to which recording will be resampled using
-        SoX. If None, do not resample.
-        (Default: Recording sample rate.)
-
-    channel : int, optional
-        Channel to extract (1-indexed).
-        (Default: 1)
-
-    start : float, optional
-        Time (seconds) of center of first frame.
-        (Default: 0)
-
-    end : float, optional
-        Time (seconds) of center of last frame.
-        (Default: Duration of recording.)
-    """
-    if end is None:
-        end = get_dur(af)
-
-    # Resample and load into array.
-    try:
-        cmd = ['sox', af,
-               '-b', '16', # Make 16-bit
-               '-e', 'signed-integer', # And linear PCM
-               '-t', 'wav',
-               wf,
-               'remix', str(channel), # Extract single channel.
-               'trim', str(start), f'={end}',
-               'rate', '16000',
-               ]
-        with open(os.devnull, 'wb') as f:
-            subprocess.check_output(cmd, stderr=f)
-    except subprocess.CalledProcessError:
-        raise IOError('Error opening: {af}')
+__all__ = ['concat_segs', 'elim_short_segs', 'merge_segs', 'resample']
 
 
 def concat_segs(seg_seqs, dur=None):
@@ -170,38 +95,6 @@ def elim_short_segs(segs, target_lab='nonspeech', replace_lab='speech',
         if label == target_lab and dur < min_dur:
             seg[-1] = replace_lab
     return segs
-
-
-def arange(start, stop, step=1):
-    """Return evenly spaced values on the interval `[start, stop)`.
-
-    Values are genreated on the half-open interval `[start, stop)`, starting
-    with `start` and incrementing by `step` after each value.
-
-    Mimics behaviour of `numpy.arange`.
-
-    Parameters
-    ----------
-    start : float
-        Start of interval.
-
-    stop : float
-        End of interval.
-
-    step : float
-        Spacing between values.
-        (Default: 1)
-    """
-    if stop <= start:
-        return []
-    vals = [start]
-    val = vals[0]
-    while val < stop:
-        val += step
-        if val >= stop:
-            break
-        vals.append(val)
-    return vals
 
 
 def resample(x, orig_sr, new_sr):
