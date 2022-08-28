@@ -5,8 +5,11 @@
 import os
 import subprocess
 
+import numpy as np
+import scipy.signal
+
 __all__ = ['arange', 'concat_segs', 'convert_to_wav', 'elim_short_segs',
-           'get_dur', 'merge_segs']
+           'get_dur', 'merge_segs', 'resample']
 
 
 def get_dur(af):
@@ -199,3 +202,35 @@ def arange(start, stop, step=1):
             break
         vals.append(val)
     return vals
+
+
+def resample(x, orig_sr, new_sr):
+    """Resample audio from `orig_sr` to `new_sr` Hz.
+
+    Uses polyphase resampling as implemented within `scipy.signal`.
+
+    Parameters
+    ----------
+    x : ndarray, (nsamples,)
+        Time series to be resampled.
+
+    orig_sr : int
+        Original sample rate (Hz) of `x`.
+
+    new_sr : int
+        New sample rate (Hz).
+
+    Returns
+    -------
+    x_resamp : ndarray, (nsamples * new_sr / orig_sr,)
+        Version of `x` resampled from `orig_sr` Hz to `new_sr` Hz.
+
+    See also
+    --------
+    scipy.signal.resample_poly
+    """
+    gcd = np.gcd(orig_sr, new_sr)
+    upsample_factor = new_sr // gcd
+    downsample_factor = orig_sr // gcd
+    return scipy.signal.resample_poly(
+        x, upsample_factor, downsample_factor, axis=-1)

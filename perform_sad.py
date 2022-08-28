@@ -80,28 +80,58 @@ Pitt, M. A., Dilley, L., Johnson, K., Kiesling, S., Raymond, W., Hume, E.,
   http://buckeyecorpus.osu.edu/
 """
 import argparse
+from dataclasses import dataclass
 from functools import partial
 import multiprocessing
 from pathlib import Path
 import sys
 
+import soundfile as sf
 from tqdm import tqdm
 
 from seglib import __version__ as VERSION
 from seglib.io import read_script_file, write_label_file
 from seglib.logging import getLogger, setup_logger, WARNING
-from seglib.segment import segment_file, Channel
+from seglib.segment import segment_file
+from seglib.utils import resample
 
 logger = getLogger()
 setup_logger(logger, level=WARNING)
+
+
+@dataclass
+class Channel:
+    """Channel of recording.
+
+    Parameters
+    ----------
+    uri : str
+        Channel URI.
+
+    audio_pat : Path
+        Path to audio file channel is one.
+
+    channel : int
+        Channel number on audio file (1-indexed).
+    """
+    uri: str
+    audio_path: Path
+    channel: int
 
 
 def parallel_wrapper(channel, args):
     """Wrapper around `segment_file` for use with multiprocessing."""
     msgs = []  # Warning messages to display to user.
     try:
+        with open(channel.audio_path, 'rb') as f:
+            x, sr = sf.read(f)
+        if x.ndim > 1:
+            x = x[:, channel.channel-1]
+        if sr != 16000:
+            x = resample(x, sr, 16000)
+            sr = 16000
         segs = segment_file(
-            channel, min_speech_dur=args.min_speech_dur,
+            x, sr, min_speech_dur=args.min_speech_dur,
             min_nonspeech_dur=args.min_nonspeech_dur,
             min_chunk_dur=args.min_chunk_dur, max_chunk_dur=args.max_chunk_dur,
             speech_scale_factor=args.speech_scale_factor)
@@ -174,7 +204,7 @@ def main():
     if args.scp_path is not None:
         audio_paths = read_script_file(args.scp_path)
     elif args.audio_path:
-        audio_paths = {audio_path.name : audio_path for audio_path in args.audio_path}
+        audio_paths = {audio_path.stem : audio_path for audio_path in args.audio_path}
     else:
         return
     args.n_jobs = min(len(audio_paths), args.n_jobs)

@@ -10,11 +10,13 @@ import shutil
 import subprocess
 import tempfile
 
-from .io import read_label_file
-from .utils import (arange, concat_segs, convert_to_wav, elim_short_segs,
-                          get_dur, merge_segs)
+import soundfile as sf
 
-__all__ = ['Channel', 'HTKConfig', 'segment_file']
+from .io import read_label_file
+from .utils import (arange, concat_segs, elim_short_segs, merge_segs,
+                    resample)
+
+__all__ = ['HTKConfig', 'segment_file']
 
 
 THIS_DIR = Path(__file__).parent
@@ -32,48 +34,31 @@ class HTKConfig:
     monophones_path: Path
 
 
-@dataclass
-class Channel:
-    """Channel of recording.
-
-    Parameters
-    ----------
-    uri : str
-        Channel URI.
-
-    rec_uri : str
-        Recording URI.
-
-    audio_pat : Path
-        Path to audio file channel is one.
-
-    channel : int
-        Channel number on audio file (1-indexed).
-    """
-    uri: str
-    audio_path: Path
-    channel: int
-
-    @property
-    def duration(self):
-        """Duration in seconds."""
-        return get_dur(self.audio_path)
-
-
 class SegmentationError(BaseException): pass
 
 
-def _segment_chunk(channel, onset, offset, htk_config):
+# TODO:
+# - resample audio to 16 kHz
+# - divide into chunks
+# - write chunks to disk as WAV for HTK
+# - time doing things this way vs using SoX
+def _segment_chunk(x, sr, onset, offset, htk_config):
     """Segment chunk of channel from audio file."""
-    # Create directory to hold intermediate segmentations.
+    # Temp directory to hold chunk WAV/label file.
     tmp_dir = Path(tempfile.mkdtemp())
 
-    # Convert to WAV and trim to chunk.
-    chunk_uri = f'{channel.uri}_{onset:.3f}_{offset:.3f}'
-    wav_path = Path(tmp_dir, chunk_uri + '.wav')
-    convert_to_wav(wav_path, channel.audio_path, channel.channel, onset, offset)
+    # Save chunk as 16 bit, 16 kHz WAV.
+    bi = int(sr*onset)
+    ei = int(sr*offset)
+    x = x[bi:ei]
+    if sr != 16000:
+        # Resample to 16 kHz.
+        x = resample(x, sr, 16000)
+        sr = 16000
+    wav_path = Path(tmp_dir, 'chunk.wav')
+    sf.write(wav_path, x, sr, 'PCM_16')
 
-    # Segment.
+    # Shell out to HTK to segment.
     cmd = ['HVite',
            '-T', '0',
            '-w', str(htk_config.phone_net_path),
@@ -91,7 +76,7 @@ def _segment_chunk(channel, onset, offset, htk_config):
     with open(os.devnull, 'wb') as f:
         subprocess.call(cmd, stdout=f, stderr=f)
     try:
-        lab_path = Path(tmp_dir, chunk_uri + '.lab')
+        lab_path = Path(tmp_dir, 'chunk.lab')
         segs = read_label_file(lab_path, in_sec=False)
     except:
         raise SegmentationError
@@ -101,7 +86,7 @@ def _segment_chunk(channel, onset, offset, htk_config):
     return segs
 
 
-def segment_file(channel, min_speech_dur=0.500, min_nonspeech_dur=0.300,
+def segment_file(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
                  min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1):
     """Perform speech activity detection on a single channel of an audio file.
 
@@ -110,8 +95,11 @@ def segment_file(channel, min_speech_dur=0.500, min_nonspeech_dur=0.300,
 
     Parameters
     ----------
-    channel : Channel
-        Audio channel to perform SAD on.
+    x : ndarray (n_samples)
+        Audio samples.
+
+    sr : int
+        Sample rate (Hz).
 
     min_speech_dur : float, optional
         Minimum duration of speech segments in seconds.
@@ -152,10 +140,13 @@ def segment_file(channel, min_speech_dur=0.500, min_nonspeech_dur=0.300,
                            MODEL_DIR / 'dict',
                            MODEL_DIR / 'monophones')
 
-    rec_dur = channel.duration  # Duration of recording.
-    max_chunk_dur = min(max_chunk_dur, channel.duration)
-    min_chunk_dur = min(min_chunk_dur, channel.duration)
+    rec_dur = len(x) / sr  # Duration of recording.
+    max_chunk_dur = min(max_chunk_dur, rec_dur)
+    min_chunk_dur = min(min_chunk_dur, rec_dur)
+
     while max_chunk_dur >= min_chunk_dur:
+        # TODO: Elim max chunk dur.
+        # TODO: More straightforward recursion.
         success = False
         try:
             # Split recording into chunks of at most 3000 seconds.
@@ -177,9 +168,10 @@ def segment_file(channel, min_speech_dur=0.500, min_nonspeech_dur=0.300,
             # Segment chunks.
             seg_seqs = []
             for onset, offset in chunks:
-                segs = _segment_chunk(channel, onset, offset, htk_config)
+                segs = _segment_chunk(x, sr, onset, offset, htk_config)
                 dur = offset - onset
-                segs[-1][1] = dur
+                if segs:
+                    segs[-1][1] = dur
                 seg_seqs.append(segs)
             segs = concat_segs(seg_seqs, rec_dur)
 
