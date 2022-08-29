@@ -2,48 +2,40 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Functions for segmenting recordings."""
-from dataclasses import dataclass
-from math import log
-import os
 from pathlib import Path
 import shutil
-import subprocess
 import tempfile
 
 import numpy as np
 import soundfile as sf
 
+from .htk import hvite, write_hmmdefs, HTKError, HViteConfig
 from .io import read_label_file
 from .utils import (concat_segs, elim_short_segs, merge_segs,
                     resample)
 
-__all__ = ['HTKConfig', 'segment_file']
+__all__ = ['segment_file']
 
 
 THIS_DIR = Path(__file__).parent
-MODEL_DIR = THIS_DIR / 'model'  # Directory containing HTK files.
+
+# Model directory for pre-trained model.
+MODEL_DIR = THIS_DIR / 'model'
+
+# Names of phones corresponding to broad phonetic classes.
+SPEECH_PHONES = ['f',  # Fricative.
+                 'g',  # Glide/liquid.
+                 'n',  # Nasal.
+                 's',  # Stop/affricate.
+                 'v',  # Vowel.
+                ]
 
 
-@dataclass
-class HTKConfig:
-    """TODO"""
-    phone_net_path: Path
-    macros_path: Path
-    hmmdefs_path: Path
-    config_path: Path
-    dict_path: Path
-    monophones_path: Path
+class SegmentationError(BaseException):
+    """Error segmenting file."""
 
 
-class SegmentationError(BaseException): pass
-
-
-# TODO:
-# - resample audio to 16 kHz
-# - divide into chunks
-# - write chunks to disk as WAV for HTK
-# - time doing things this way vs using SoX
-def _segment_chunk(x, sr, onset, offset, htk_config):
+def _segment_chunk(x, sr, onset, offset, hvite_config):
     """Segment chunk of channel from audio file."""
     # Temp directory to hold chunk WAV/label file.
     tmp_dir = Path(tempfile.mkdtemp())
@@ -59,28 +51,11 @@ def _segment_chunk(x, sr, onset, offset, htk_config):
     wav_path = Path(tmp_dir, 'chunk.wav')
     sf.write(wav_path, x, sr, 'PCM_16')
 
-    # Shell out to HTK to segment.
-    cmd = ['HVite',
-           '-T', '0',
-           '-w', str(htk_config.phone_net_path),
-           '-l', str(tmp_dir),
-           '-H', str(htk_config.macros_path),
-           '-H', str(htk_config.hmmdefs_path),
-           '-C', str(htk_config.config_path),
-           '-p', '-0.3',
-           '-s', '5.0',
-           '-y', 'lab',
-           str(htk_config.dict_path),
-           str(htk_config.monophones_path),
-           wav_path,
-          ]
-    with open(os.devnull, 'wb') as f:
-        subprocess.call(cmd, stdout=f, stderr=f)
+    # Decode using HTK and load segments from resulting label file.
     try:
-        lab_path = Path(tmp_dir, 'chunk.lab')
+        lab_path = hvite(
+            wav_path, hvite_config, tmp_dir)
         segs = read_label_file(lab_path, in_sec=False)
-    except:
-        raise SegmentationError
     finally:
         shutil.rmtree(tmp_dir)
 
@@ -130,21 +105,19 @@ def segment_file(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
     -------
     segs : TODO
     """
-    # Modify GMM weights to account for speech scale factor.
-    old_hmmdefs_path = MODEL_DIR / 'hmmdefs'
+    # Load model.
+    hvite_config = HViteConfig.from_model_dir(MODEL_DIR)
     new_hmmdefs_path = Path(tempfile.mktemp())
-    write_hmmdefs(old_hmmdefs_path, new_hmmdefs_path, speech_scale_factor)
-    htk_config = HTKConfig(MODEL_DIR / 'phone_net',
-                           MODEL_DIR / 'macros',
-                           new_hmmdefs_path,
-                           MODEL_DIR  / 'config',
-                           MODEL_DIR / 'dict',
-                           MODEL_DIR / 'monophones')
+    write_hmmdefs(
+        hvite_config.hmmdefs_path, new_hmmdefs_path, speech_scale_factor,
+        SPEECH_PHONES)
+    hvite_config.hmmdefs_path = new_hmmdefs_path
 
+    # HVite sometimes (and unpredictably) fails on longer recordings, so try to segment
+    # using progressively smaller chunks until all succeed, then merge.
     rec_dur = len(x) / sr  # Duration of recording.
     max_chunk_dur = min(max_chunk_dur, rec_dur)
     min_chunk_dur = min(min_chunk_dur, rec_dur)
-
     while max_chunk_dur >= min_chunk_dur:
         # TODO: Elim max chunk dur.
         # TODO: More straightforward recursion.
@@ -169,7 +142,7 @@ def segment_file(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
             # Segment chunks.
             seg_seqs = []
             for onset, offset in chunks:
-                segs = _segment_chunk(x, sr, onset, offset, htk_config)
+                segs = _segment_chunk(x, sr, onset, offset, hvite_config)
                 dur = offset - onset
                 if segs:
                     segs[-1][1] = dur
@@ -191,53 +164,15 @@ def segment_file(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
             segs = merge_segs(segs)
             success = True
             break
-        except SegmentationError:
+        except HTKError:
             max_chunk_dur /= 2.
-    if not success:
-        raise SegmentationError
 
     # Remove temporary hmmdefs file.
     new_hmmdefs_path.unlink()
 
+    # Very rarely, the recursive process above will fail to terminate in a
+    # valid segmentation. If this happens, give up and raise an exception.
+    if not success:
+        raise SegmentationError
+
     return segs
-
-
-def write_hmmdefs(old_hmmdefs_path, new_hmmdefs_path, speech_scale_factor=1):
-    """Modify an HTK hmmdefs file in which speech model acoustic likelihoods
-    are scaled by ``speech_scale_factor``.
-
-    Parameters
-    ----------
-    old_hmmdefs_path : Path
-        Path to original HTK hmmdefs file.
-
-    new_hmmsdefs_path : str
-        Path for modified HTK hmmdefs file. If file already exists, it
-        will be overwritten.
-
-    speech_scale_factor : float, optional
-        Factor by which speech model acoustic likelihoods are scaled prior to
-        beam search. Larger values will bias the SAD engine in favour of more
-        speech segments.
-        (Default: 1)
-    """
-    old_hmmdefs_path = Path(old_hmmdefs_path)
-    new_hmmdefs_path = Path(new_hmmdefs_path)
-
-    with open(old_hmmdefs_path, 'r', encoding='utf-8') as f:
-        with open(new_hmmdefs_path, 'w', encoding='utf-8') as g:
-            # Header.
-            for _ in range(3):
-                g.write(f.readline())
-
-            # Model definitions.
-            curr_phone = None
-            for line in f:
-                if line.startswith('~h'):
-                    curr_phone = line[3:].strip('\"\n')
-                if line.startswith('<GCONST>') and curr_phone != 'nonspeech':
-                    # Modify GCONST only for mixtures of speech models.
-                    gconst = float(line[9:-1])
-                    gconst += log(speech_scale_factor)
-                    line = f'<GCONST> {gconst:.6e}\n'
-                g.write(line)
