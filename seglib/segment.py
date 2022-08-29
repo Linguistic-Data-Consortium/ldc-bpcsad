@@ -6,15 +6,13 @@ from pathlib import Path
 import shutil
 import tempfile
 
-import numpy as np
 import soundfile as sf
 
 from .htk import hvite, write_hmmdefs, HTKError, HViteConfig
 from .io import read_label_file
-from .utils import (concat_segs, elim_short_segs, merge_segs,
-                    resample)
+from .utils import (elim_short_segs, merge_segs, resample)
 
-__all__ = ['segment_file']
+__all__ = ['segment']
 
 
 THIS_DIR = Path(__file__).parent
@@ -35,39 +33,72 @@ class SegmentationError(BaseException):
     """Error segmenting file."""
 
 
-def _segment_chunk(x, sr, onset, offset, hvite_config):
-    """Segment chunk of channel from audio file."""
-    # Temp directory to hold chunk WAV/label file.
+def _segment_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
+    """Segment chunk of audio timeseries.
+
+    Segments the chunk `x[bi:ei)`.
+
+    Parameters
+    ----------
+    x : TODO
+    sr : TODO
+    bi : int
+        Index of first sample of chunk.
+
+    ei : int
+        Index of last sample of chunk.
+
+    min_chunk_len : int
+        Minimum size of chunk in samples.
+
+    hvite_config : HViteConfig
+        TODO
+    """
+    rec_len = len(x)
+    chunk_len = ei - bi
+    if (chunk_len < rec_len and chunk_len < min_chunk_len):
+        # Base case: Chunk length < minimum chunk length. We make an exception
+        # for when the chunk is equal to x as we want to guarantee HVite is
+        # always called at least once, no matter how short the audio.
+        chunk_dur = (ei - bi) / sr
+        min_chunk_dur = min_chunk_len / sr
+        raise SegmentationError(
+            f'Minimum chunk duration reached: {chunk_dur} < {min_chunk_dur}')
     tmp_dir = Path(tempfile.mkdtemp())
-
-    # Save chunk as 16 bit, 16 kHz WAV.
-    bi = int(sr*onset)
-    ei = int(sr*offset)
-    x = x[bi:ei]
-    if sr != 16000:
-        # Resample to 16 kHz.
-        x = resample(x, sr, 16000)
-        sr = 16000
-    wav_path = Path(tmp_dir, 'chunk.wav')
-    sf.write(wav_path, x, sr, 'PCM_16')
-
-    # Decode using HTK and load segments from resulting label file.
     try:
+        # Base case: HVite finishes successfully; return segments.
+        wav_path = tmp_dir / 'chunk.wav'
+        sf.write(wav_path, x[bi:ei+1], sr, 'PCM_16')
         lab_path = hvite(
             wav_path, hvite_config, tmp_dir)
         segs = read_label_file(lab_path, in_sec=False)
+        chunk_onset = bi / sr
+        segs = [[onset + chunk_onset, offset + chunk_onset, label]
+                for (onset, offset, label) in segs]
+    except HTKError:
+        # Recursive case: Retry HVite on two shorter chunks.
+        mid = (bi + ei) // 2
+        segs = _segment_chunk(x, sr, bi, mid, min_chunk_len, hvite_config)
+        segs.extend(
+            _segment_chunk(x, sr, mid, ei, min_chunk_len, hvite_config))
     finally:
         shutil.rmtree(tmp_dir)
 
     return segs
 
 
-def segment_file(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
-                 min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1):
+def segment(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
+            min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1):
     """Perform speech activity detection on a single channel of an audio file.
 
     The resulting segmentation will be saved in an HTK label file in
     ``lab_dir`` with the same name as ``audio_path`` but file extension ``ext``.
+
+    Because HTK's `HVite` command sometimes fails for longer recordings, we
+    first split `x` into chunks of at most `max_chunk_dur` seconds, segment
+    each chunk separately, then merge the results. The individual chunks are
+    segmented using a recursive approach that calls `HVite` with progressively
+    smaller chunks until a minimum chunk duration (`min_chunk_dur`) is reached.
 
     Parameters
     ----------
@@ -104,75 +135,64 @@ def segment_file(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
     Returns
     -------
     segs : TODO
+
+    Raises
+    ------
+    SegmentationError
     """
-    # Load model.
-    hvite_config = HViteConfig.from_model_dir(MODEL_DIR)
-    new_hmmdefs_path = Path(tempfile.mktemp())
-    write_hmmdefs(
-        hvite_config.hmmdefs_path, new_hmmdefs_path, speech_scale_factor,
-        SPEECH_PHONES)
-    hvite_config.hmmdefs_path = new_hmmdefs_path
+    try:
+        # Load model.
+        hvite_config = HViteConfig.from_model_dir(MODEL_DIR)
+        new_hmmdefs_path = Path(tempfile.mktemp())
+        write_hmmdefs(
+            hvite_config.hmmdefs_path, new_hmmdefs_path, speech_scale_factor,
+            SPEECH_PHONES)
+        hvite_config.hmmdefs_path = new_hmmdefs_path
 
-    # HVite sometimes (and unpredictably) fails on longer recordings, so try to segment
-    # using progressively smaller chunks until all succeed, then merge.
-    rec_dur = len(x) / sr  # Duration of recording.
-    max_chunk_dur = min(max_chunk_dur, rec_dur)
-    min_chunk_dur = min(min_chunk_dur, rec_dur)
-    while max_chunk_dur >= min_chunk_dur:
-        # TODO: Elim max chunk dur.
-        # TODO: More straightforward recursion.
-        success = False
-        try:
-            # Split recording into chunks of at most 3000 seconds.
-            if rec_dur > max_chunk_dur:
-                bounds = np.arange(0, rec_dur, max_chunk_dur)
-                suffix_dur = rec_dur - bounds[-1]
-                if suffix_dur < min_chunk_dur:
-                    # Absorb remainder of recording into final chunk.
-                    bounds[-1] = rec_dur
-                else:
-                    # Add in one final chunk to cover the remainder. Duration is
-                    # smaller than the other chunks, but still > our minimum
-                    # duration for segmentation.
-                    bounds.append(rec_dur)
+        # Resample x to 16 kHz for feature extraction.
+        if sr != 16000:
+            x = resample(x, sr, 16000)
+            sr = 16000
+
+        # Determine boundaries of the chunks for segmentation.
+        n_samples = len(x)
+        min_chunk_len = min(int(min_chunk_dur * sr), n_samples)
+        max_chunk_len = min(int(max_chunk_dur * sr), n_samples)
+        if n_samples <= max_chunk_len:
+            bounds = [0, n_samples]
+        else:
+            bounds = list(range(0, n_samples, max_chunk_len))
+            final_chunk_len = n_samples - bounds[-1]
+            if final_chunk_len < min_chunk_len:
+                # Absorb remainder of x into final chunk.
+                bounds[-1] = n_samples
             else:
-                bounds = [0.0, rec_dur]
-            chunks = list(zip(bounds[:-1], bounds[1:]))
+                # Assign remainder of x to its own chunk.
+                bounds.append(n_samples)
+        chunks = list(zip(bounds[:-1], bounds[1:]))
 
-            # Segment chunks.
-            seg_seqs = []
-            for onset, offset in chunks:
-                segs = _segment_chunk(x, sr, onset, offset, hvite_config)
-                dur = offset - onset
-                if segs:
-                    segs[-1][1] = dur
-                seg_seqs.append(segs)
-            segs = concat_segs(seg_seqs, rec_dur)
+        # Segment.
+        segs = []
+        for bi, ei in chunks:
+            segs_ = _segment_chunk(x, sr, bi, ei, min_chunk_len, hvite_config)
+            if len(segs_) > 0:
+                segs_[-1][1] = ei / sr
+                if len(segs) > 0:
+                    segs_[0][0] = segs[-1][1]
+            segs.extend(segs_)
+        segs = merge_segs(segs)
+        segs = elim_short_segs(
+            segs, target_lab='nonspeech', replace_lab='speech',
+            min_dur=min_nonspeech_dur)
+        segs = merge_segs(segs)
+        segs = elim_short_segs(
+            segs, target_lab='speech', replace_lab='nonspeech',
+            min_dur=min_speech_dur)
+        segs = merge_segs(segs)
+    except SegmentationError as e:
+        raise e
+    finally:
+        new_hmmdefs_path.unlink()
 
-            # Postprocess segmentation:
-            # - merge adjacent segments with same level
-            # - eliminate short nonspeech segments
-            # - eliminate short speech segments
-            segs = merge_segs(segs)
-            segs = elim_short_segs(
-                segs, target_lab='nonspeech', replace_lab='speech',
-                min_dur=min_nonspeech_dur)
-            segs = merge_segs(segs)
-            segs = elim_short_segs(
-                segs, target_lab='speech', replace_lab='nonspeech',
-                min_dur=min_speech_dur)
-            segs = merge_segs(segs)
-            success = True
-            break
-        except HTKError:
-            max_chunk_dur /= 2.
-
-    # Remove temporary hmmdefs file.
-    new_hmmdefs_path.unlink()
-
-    # Very rarely, the recursive process above will fail to terminate in a
-    # valid segmentation. If this happens, give up and raise an exception.
-    if not success:
-        raise SegmentationError
 
     return segs

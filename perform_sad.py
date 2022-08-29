@@ -92,8 +92,7 @@ from tqdm import tqdm
 from seglib import __version__ as VERSION
 from seglib.io import read_script_file, write_label_file
 from seglib.logging import getLogger, setup_logger, WARNING
-from seglib.segment import segment_file
-from seglib.utils import resample
+from seglib.segment import segment
 
 logger = getLogger()
 setup_logger(logger, level=WARNING)
@@ -120,24 +119,22 @@ class Channel:
 
 
 def parallel_wrapper(channel, args):
-    """Wrapper around `segment_file` for use with multiprocessing."""
+    """Wrapper around `segment` for use with multiprocessing."""
     msgs = []  # Warning messages to display to user.
     try:
         with open(channel.audio_path, 'rb') as f:
             x, sr = sf.read(f)
         if x.ndim > 1:
             x = x[:, channel.channel-1]
-        if sr != 16000:
-            x = resample(x, sr, 16000)
-            sr = 16000
-        segs = segment_file(
+        segs = segment(
             x, sr, min_speech_dur=args.min_speech_dur,
             min_nonspeech_dur=args.min_nonspeech_dur,
             min_chunk_dur=args.min_chunk_dur, max_chunk_dur=args.max_chunk_dur,
             speech_scale_factor=args.speech_scale_factor)
         lab_path = Path(args.lab_dir, channel.uri + args.ext)
         write_label_file(lab_path, segs)
-    except:
+    except Exception as e:
+        print(e)
         msgs.append(f'SAD failed for "{channel.audio_path}". Skipping.')
     return msgs
 
