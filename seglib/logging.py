@@ -80,7 +80,7 @@ class CustomFormatter(logging.Formatter):
             WARN : expand_fmt('WARNING: %(message)s'),
             WARNING : expand_fmt('WARNING: %(message)s'),
             INFO : expand_fmt('%(message)s'),
-	    DEBUG : expand_fmt('%(message)s'),
+	    DEBUG : expand_fmt('DEBUG: %(message)s'),
             }
 
     def format(self, record):

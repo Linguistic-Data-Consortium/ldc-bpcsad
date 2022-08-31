@@ -10,10 +10,14 @@ import soundfile as sf
 
 from .htk import hvite, write_hmmdefs, HTKError, HViteConfig
 from .io import load_htk_label_file
+from .logging import getLogger
 from .segment import merge_segs
 from .utils import resample
 
 __all__ = ['decode']
+
+
+logger = getLogger()
 
 
 THIS_DIR = Path(__file__).parent
@@ -55,27 +59,43 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
     hvite_config : HViteConfig
         TODO
     """
+    # Convert from samples to seconds for more human-readable exceptions and
+    # logging.
     rec_len = len(x)
+    rec_dur = rec_len / sr
     chunk_len = ei - bi
+    chunk_onset = bi / sr
+    chunk_offset = ei / sr
+    chunk_dur = chunk_len / sr
+
+    # Base case: Chunk length < minimum chunk length. We make an exception
+    # for when the chunk is equal to x as we want to guarantee HVite is
+    # always called at least once, no matter how short the audio.
     if (chunk_len < rec_len and chunk_len < min_chunk_len):
-        # Base case: Chunk length < minimum chunk length. We make an exception
-        # for when the chunk is equal to x as we want to guarantee HVite is
-        # always called at least once, no matter how short the audio.
-        chunk_dur = chunk_len / sr
         min_chunk_dur = min_chunk_len / sr
         raise DecodingError(
             f'Minimum chunk duration reached: {chunk_dur} < {min_chunk_dur}')
+
+    # Actually attempt decoding via HVite.
+    # TODO: Move recursion outside of try...except block.
     tmp_dir = Path(tempfile.mkdtemp())
-    try:        
+    try:
         # Base case: HVite finishes successfully; return segments.
+        logger.debug(
+            f'Attempting decoding for chunk: RECORDING_DUR: {rec_dur:.3f}, '
+            f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
+            f'CHUNK_OFFSET: {chunk_offset:.3f}')
         wav_path = tmp_dir / 'chunk.wav'
         sf.write(wav_path, x[bi:ei+1], sr, 'PCM_16')
         lab_path = hvite(
             wav_path, hvite_config, tmp_dir)
         segs = load_htk_label_file(
             lab_path, target_labels=['speech'], in_sec=False)
-        chunk_onset = bi / sr
         segs = [seg.shift(chunk_onset) for seg in segs]
+        logger.debug(
+            f'Successfully decoded chunk:    RECORDING_DUR: {rec_dur:.3f}, '
+            f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
+            f'CHUNK_OFFSET: {chunk_offset:.3f}')
     except HTKError:
         # Recursive case: Retry HVite on two shorter chunks.
         mid = (bi + ei) // 2

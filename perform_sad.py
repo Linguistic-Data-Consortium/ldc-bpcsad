@@ -83,6 +83,7 @@ import argparse
 from dataclasses import dataclass
 from functools import partial
 import multiprocessing
+import multiprocessing.dummy
 from pathlib import Path
 import sys
 
@@ -91,11 +92,10 @@ from tqdm import tqdm
 
 from seglib import __version__ as VERSION
 from seglib.io import write_htk_label_file
-from seglib.logging import getLogger, setup_logger, WARNING
+from seglib.logging import getLogger, setup_logger, DEBUG, WARNING
 from seglib.decode import decode
 
 logger = getLogger()
-setup_logger(logger, level=WARNING)
 
 
 @dataclass
@@ -170,6 +170,14 @@ def read_script_file(scp_path):
 
 def parallel_wrapper(channel, args):
     """Wrapper around `decode` for use with multiprocessing."""
+    # Warning messages are collected and handled in calling process due to
+    # potential ugly interactions with multiprocessing and tqdm. This can be
+    # avoided at cost of an additional dependency by using the
+    # multiprocessing-logging package:
+    #
+    #     https://github.com/jruere/multiprocessing-logging
+    #
+    # TODO: Re-evaluate decision to use multiprocessing-logging.
     msgs = []  # Warning messages to display to user.
     try:
         with open(channel.audio_path, 'rb') as f:
@@ -237,6 +245,9 @@ def main():
         '--disable-progress', default=False, action='store_true',
         help='disable progress bar')
     parser.add_argument(
+        '--debug', default=False, action='store_true',
+        help='enable DEBUG mode')
+    parser.add_argument(
         '--n-jobs', '-j', nargs=None, default=1, type=int, metavar='INT',
         dest='n_jobs', help='set num threads to use (Default: %(default)s)')
     parser.add_argument(
@@ -245,6 +256,10 @@ def main():
         parser.print_help()
         sys.exit(1)
     args = parser.parse_args()
+
+    # Set up logger.
+    log_level = DEBUG if args.debug else WARNING
+    setup_logger(logger, level=log_level)
 
     # Load paths from script file.
     if args.scp_path is not None:
@@ -258,7 +273,14 @@ def main():
     # Perform SAD on files in parallel.
     channels = [Channel(uri, audio_path, args.channel)
                 for uri, audio_path in audio_paths.items()]
-    with multiprocessing.Pool(args.n_jobs) as pool:
+    args.n_jobs = min(args.n_jobs, len(channels))
+    if args.debug:
+        logger.warning(
+            'Flag "--n-jobs" is ignored for debug mode. Using single-threaded '
+            'implementation.')
+        args.n_jobs = 1
+    Pool = multiprocessing.Pool if args.n_jobs > 1 else multiprocessing.dummy.Pool
+    with Pool(args.n_jobs) as pool:
         f = partial(parallel_wrapper, args=args)
         with tqdm(total=len(channels), disable=args.disable_progress) as pbar:
             for msgs in pool.imap(f, channels):
