@@ -24,6 +24,7 @@ class HViteConfig:
     @staticmethod
     def from_model_dir(model_dir):
         """Return ``HViteConfig` for `model_dir`."""
+        model_dir = Path(model_dir)
         return HViteConfig(
             model_dir / 'phone_net',
             model_dir / 'macros',
