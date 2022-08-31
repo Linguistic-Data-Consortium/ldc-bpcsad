@@ -90,9 +90,9 @@ import soundfile as sf
 from tqdm import tqdm
 
 from seglib import __version__ as VERSION
-from seglib.io import read_script_file, write_label_file
+from seglib.io import write_htk_label_file
 from seglib.logging import getLogger, setup_logger, WARNING
-from seglib.segment import segment
+from seglib.decode import decode
 
 logger = getLogger()
 setup_logger(logger, level=WARNING)
@@ -118,29 +118,78 @@ class Channel:
     channel: int
 
 
+def read_script_file(scp_path):
+    """Read Kaldi or HTK script file.
+    The script file is expected to be in one of two formats:
+
+    - Kaldi
+      Each line contains has two whitespace delimited fields:
+      - uri  --  a uniform resource identifier for the file
+      - path  --  the path to the file
+    - HTK
+      Each line consists of a file path.
+
+    For HTK format script files, URIs will be deduced automatically from the
+    file's basename.
+
+    Parameters
+    ----------
+    scp_path : Path
+        Path to script file.
+
+    Returns
+    -------
+    paths : dict
+        Mapping from URIs to paths.
+    """
+    scp_path = Path(scp_path)
+    paths = {}
+    with open(scp_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            fields = line.strip().split()
+            if len(fields) > 2:
+                logger.warning(
+                    f'Too many fields in line of script file "{scp_path}".'
+                    f'Skipping.')
+                continue
+            fpath = Path(fields[-1])
+            if len(fields) == 2:
+                uri = fields[0]
+            else:
+                uri = fpath.stem
+                logger.warning(
+                    f'No URI specified for file "{fpath}". '
+                    f'Setting using basename: "{uri}".')
+            if uri in paths:
+                logger.warning(
+                    f'Duplicate URI "{uri}" detected. Skipping.')
+                continue
+            paths[uri] = fpath
+    return paths
+
+
 def parallel_wrapper(channel, args):
-    """Wrapper around `segment` for use with multiprocessing."""
+    """Wrapper around `decode` for use with multiprocessing."""
     msgs = []  # Warning messages to display to user.
     try:
         with open(channel.audio_path, 'rb') as f:
             x, sr = sf.read(f)
         if x.ndim > 1:
             x = x[:, channel.channel-1]
-        segs = segment(
+        segs = decode(
             x, sr, min_speech_dur=args.min_speech_dur,
             min_nonspeech_dur=args.min_nonspeech_dur,
             min_chunk_dur=args.min_chunk_dur, max_chunk_dur=args.max_chunk_dur,
             speech_scale_factor=args.speech_scale_factor)
         lab_path = Path(args.lab_dir, channel.uri + args.ext)
-        write_label_file(lab_path, segs)
+        rec_dur = len(x) / sr
+        write_htk_label_file(lab_path, segs, rec_dur=rec_dur, is_sorted=True)
     except Exception as e:
-        print(e)
         msgs.append(f'SAD failed for "{channel.audio_path}". Skipping.')
     return msgs
 
 
 def main():
-    # Parse command line args.
     parser = argparse.ArgumentParser(
         description='Perform speech activity detection on audio files.',
         add_help=True,

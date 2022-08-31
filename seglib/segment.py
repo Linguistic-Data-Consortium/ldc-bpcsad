@@ -1,198 +1,187 @@
-# Copyright (c) 2012-2017, Trustees of the University of Pennsylvania
-# Authors: nryant@ldc.upenn.edu (Neville Ryant)
-# License: BSD 2-clause
-"""Functions for segmenting recordings."""
-from pathlib import Path
-import shutil
-import tempfile
+"""Labeled segments."""
+from dataclasses import dataclass
 
-import soundfile as sf
+from .utils import add_dataclass_slots, clip
 
-from .htk import hvite, write_hmmdefs, HTKError, HViteConfig
-from .io import read_label_file
-from .utils import (elim_short_segs, merge_segs, resample)
-
-__all__ = ['segment']
+__all__ = ['Segment']
 
 
-THIS_DIR = Path(__file__).parent
-
-# Model directory for pre-trained model.
-MODEL_DIR = THIS_DIR / 'model'
-
-# Names of phones corresponding to broad phonetic classes.
-SPEECH_PHONES = ['f',  # Fricative.
-                 'g',  # Glide/liquid.
-                 'n',  # Nasal.
-                 's',  # Stop/affricate.
-                 'v',  # Vowel.
-                ]
-
-
-class SegmentationError(BaseException):
-    """Error segmenting file."""
-
-
-def _segment_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
-    """Segment chunk of audio timeseries.
-
-    Segments the chunk `x[bi:ei)`.
+# Implementation inspired by pyannote.core.segment.
+@add_dataclass_slots
+@dataclass(unsafe_hash=True, order=True)
+class Segment:
+    """Speech segment.
 
     Parameters
     ----------
-    x : TODO
-    sr : TODO
-    bi : int
-        Index of first sample of chunk.
+    onset : float
+        Onset of segment in seconds from beginning of recording.
 
-    ei : int
-        Index of last sample of chunk.
-
-    min_chunk_len : int
-        Minimum size of chunk in samples.
-
-    hvite_config : HViteConfig
-        TODO
+    offset : float
+        Offset of segment in seconds from beginning of recording.
     """
-    rec_len = len(x)
-    chunk_len = ei - bi
-    if (chunk_len < rec_len and chunk_len < min_chunk_len):
-        # Base case: Chunk length < minimum chunk length. We make an exception
-        # for when the chunk is equal to x as we want to guarantee HVite is
-        # always called at least once, no matter how short the audio.
-        chunk_dur = (ei - bi) / sr
-        min_chunk_dur = min_chunk_len / sr
-        raise SegmentationError(
-            f'Minimum chunk duration reached: {chunk_dur} < {min_chunk_dur}')
-    tmp_dir = Path(tempfile.mkdtemp())
-    try:
-        # Base case: HVite finishes successfully; return segments.
-        wav_path = tmp_dir / 'chunk.wav'
-        sf.write(wav_path, x[bi:ei+1], sr, 'PCM_16')
-        lab_path = hvite(
-            wav_path, hvite_config, tmp_dir)
-        segs = read_label_file(lab_path, in_sec=False)
-        chunk_onset = bi / sr
-        segs = [[onset + chunk_onset, offset + chunk_onset, label]
-                for (onset, offset, label) in segs]
-    except HTKError:
-        # Recursive case: Retry HVite on two shorter chunks.
-        mid = (bi + ei) // 2
-        segs = _segment_chunk(x, sr, bi, mid, min_chunk_len, hvite_config)
-        segs.extend(
-            _segment_chunk(x, sr, mid, ei, min_chunk_len, hvite_config))
-    finally:
-        shutil.rmtree(tmp_dir)
+    onset: float
+    offset: float
 
-    return segs
+    def gap(self, other):
+        """Return gap between segment and another segment.
+
+        If the two segments overlap, the gap will have duration <= 0.
+
+        Parameter
+        ---------
+        other : Segment
+            Other segment.
+
+        Returns
+        -------
+        Segment
+            Gap segment.
+        """
+        onset = min(self.offset, other.offset)
+        offset = max(self.onset, other.onset)
+        return Segment(onset, offset)
+
+    def union(self, *other):
+        """Return union of segments.
+
+        The union of a set of segments is defined as the minimal segment
+        containing each segment in the set.
+
+        Parameter
+        ---------
+        other : Segment
+            Other segment.
+
+        Returns
+        -------
+        Segment
+            Union of the segments.
+        """
+        segs = [self]
+        segs.extend(other)
+        onset =	min(s.onset for s in segs)
+        offset = max(s.offset for s in segs)
+        return Segment(onset, offset)
+
+    def copy(self):
+        """Return deep copy of segment."""
+        return Segment(onset=self.onset, offset=self.offset)
+
+    def shift(self, delta, in_place=False):
+        """Shift segment by ``delta`` seconds."""
+        if not in_place:
+            self = self.copy()
+        self.onset += delta
+        self.offset += delta
+        return self
+
+    def clip(self, lb, ub, in_place=False):
+        """Clip segment so that its onset/offset lay within [``lb``, ``ub``].
+
+        Parameters
+        ----------
+        lb : float
+            Lowerbound of interval.
+
+        ub : float
+            Upperbound of interval.
+
+        in_place : bool, optional
+            If True, perform operation in place.
+
+        Returns
+        -------
+        Segment
+            Clipped segment.
+        """
+        if not in_place:
+            self = self.copy()
+        self.onset = clip(self.onset, lb, ub)
+        self.offset = clip(self.offset, lb, ub)
+        return self
+
+    def round(self, precision=3, in_place=False):
+        """Round onset/offset to `precision` digits."""
+        if not in_place:
+            self = self.copy()
+        self.onset = round(self.onset, precision)
+        self.offset = round(self.offset, precision)
+        return self
+
+    @property
+    def duration(self):
+        """Segment duration in seconds."""
+        return self.offset - self.onset
+
+    def __iter__(self):
+        """Unpack segment for easy interoperability with tuples.
+
+        >>> seg = Segment(0.1, 0.5)
+        >>> onset, offset = seg
+        """
+        yield self.onset
+        yield self.offset
+
+    def __bool__(self):
+        return self.duration > 0
+
+    def __or__(self, other):
+        return self.union(other)
+
+    def __xor__(self, other):
+        return self.gap(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
-def segment(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
-            min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1):
-    """Perform speech activity detection on a single channel of an audio file.
+def merge_segs(segs, thresh=0.0, is_sorted=False, copy=True):
+    """Merge segments.
 
-    The resulting segmentation will be saved in an HTK label file in
-    ``lab_dir`` with the same name as ``audio_path`` but file extension ``ext``.
+    Produces a new segmentation from `segs` by:
 
-    Because HTK's `HVite` command sometimes fails for longer recordings, we
-    first split `x` into chunks of at most `max_chunk_dur` seconds, segment
-    each chunk separately, then merge the results. The individual chunks are
-    segmented using a recursive approach that calls `HVite` with progressively
-    smaller chunks until a minimum chunk duration (`min_chunk_dur`) is reached.
+    - merging overlapping segments
+    - merging segments separated by <= `thresh` seconds.
 
     Parameters
     ----------
-    x : ndarray (n_samples)
-        Audio samples.
+    segs : list of Segment
+        Segments to be merged.
 
-    sr : int
-        Sample rate (Hz).
+    thresh : float, optional
+        Tolerance for merging. Segments separated by <= `thresh` seconds
+        will be merged.
+        (Default: 0.0)
 
-    min_speech_dur : float, optional
-        Minimum duration of speech segments in seconds.
-        (Default: 0.500)
+    is_sorted : bool, optional
+        If True, treat `segs` as already sorted. Otherwise, sort before
+        performing mergers.
+        (Default: False)
 
-    min_nonspeech_dur : float, optional
-        Minimum duration of nonspeech segments in seconds.
-        (Default: 0.300)
-
-    min_chunk_dur : float, optional
-        Minimum duration in seconds of chunk SAD may be performed on when
-        splitting long recordings.
-        (Default: 10.0)
-
-    max_chunk_dur : float, optional
-        Maximum duration in seconds of chunk SAD may be performed on when
-        splitting long recordings.
-        (Default: 3600.0)
-
-    speech_scale_factor : float, optional
-        Factor by which speech model acoustic likelihoods are scaled prior to
-        beam search. Larger values will bias the SAD engine in favour of more
-        speech segments.
-        (Default: 1)
+    copy : bool, optional
+        If True, create copy of `segs` and perform merger on this copy.
+        (Default: True)
 
     Returns
     -------
-    segs : TODO
-
-    Raises
-    ------
-    SegmentationError
+    list of Segment
+        Merged segments.
     """
-    try:
-        # Load model.
-        hvite_config = HViteConfig.from_model_dir(MODEL_DIR)
-        new_hmmdefs_path = Path(tempfile.mktemp())
-        write_hmmdefs(
-            hvite_config.hmmdefs_path, new_hmmdefs_path, speech_scale_factor,
-            SPEECH_PHONES)
-        hvite_config.hmmdefs_path = new_hmmdefs_path
+    if copy:
+        segs = [seg.copy() for seg in segs]
+    if not is_sorted:
+        segs = sorted(segs)
 
-        # Resample x to 16 kHz for feature extraction.
-        if sr != 16000:
-            x = resample(x, sr, 16000)
-            sr = 16000
+    # Perform merger.
+    merged_segs = []
+    curr_seg = segs[0]
+    for seg in segs:
+        gap = curr_seg ^ seg
+        if gap.duration > thresh:
+            merged_segs.append(curr_seg)
+            curr_seg = seg
+        curr_seg = curr_seg | seg
+    merged_segs.append(curr_seg)
 
-        # Determine boundaries of the chunks for segmentation.
-        n_samples = len(x)
-        min_chunk_len = min(int(min_chunk_dur * sr), n_samples)
-        max_chunk_len = min(int(max_chunk_dur * sr), n_samples)
-        if n_samples <= max_chunk_len:
-            bounds = [0, n_samples]
-        else:
-            bounds = list(range(0, n_samples, max_chunk_len))
-            final_chunk_len = n_samples - bounds[-1]
-            if final_chunk_len < min_chunk_len:
-                # Absorb remainder of x into final chunk.
-                bounds[-1] = n_samples
-            else:
-                # Assign remainder of x to its own chunk.
-                bounds.append(n_samples)
-        chunks = list(zip(bounds[:-1], bounds[1:]))
-
-        # Segment.
-        segs = []
-        for bi, ei in chunks:
-            segs_ = _segment_chunk(x, sr, bi, ei, min_chunk_len, hvite_config)
-            if len(segs_) > 0:
-                segs_[-1][1] = ei / sr
-                if len(segs) > 0:
-                    segs_[0][0] = segs[-1][1]
-            segs.extend(segs_)
-        segs = merge_segs(segs)
-        segs = elim_short_segs(
-            segs, target_lab='nonspeech', replace_lab='speech',
-            min_dur=min_nonspeech_dur)
-        segs = merge_segs(segs)
-        segs = elim_short_segs(
-            segs, target_lab='speech', replace_lab='nonspeech',
-            min_dur=min_speech_dur)
-        segs = merge_segs(segs)
-    except SegmentationError as e:
-        raise e
-    finally:
-        new_hmmdefs_path.unlink()
-
-
-    return segs
+    return merged_segs

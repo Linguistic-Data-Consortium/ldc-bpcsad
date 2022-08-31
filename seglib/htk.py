@@ -33,7 +33,7 @@ class HViteConfig:
             model_dir / 'monophones')
 
 
-class HTKError(BaseException):
+class HTKError(Exception):
     """Call to HTK command line tool failed."""
 
 
