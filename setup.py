@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
 
+import versioneer
+
 setup(
     #Package.
     packages=find_packages(exclude=['tests', '__pycache__']),
@@ -19,10 +21,10 @@ setup(
                  'sphinx_rtd_theme']
         },
     # Versioning.
-#    version=versioneer.get_version(),
-#    cmdclass=versioneer.get_cmdclass(),
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     # PyPI.
-    name='ldc_bpcsad',
+    name='ldc-bpcsad',
     description='A broad phonetic class based speech activity detector.',
     author='Neville Ryant',
     author_email='nryant@ldc.upenn.edu')
