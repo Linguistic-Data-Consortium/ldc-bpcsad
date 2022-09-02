@@ -90,10 +90,10 @@ import sys
 import soundfile as sf
 from tqdm import tqdm
 
-from seglib import __version__ as VERSION
-from seglib.io import write_htk_label_file
-from seglib.logging import getLogger, setup_logger, DEBUG, WARNING
-from seglib.decode import decode
+from ldc_bpcsad import __version__ as VERSION
+from ldc_bpcsad.io import write_htk_label_file
+from ldc_bpcsad.logging import getLogger, setup_logger, DEBUG, WARNING
+from ldc_bpcsad.decode import decode
 
 logger = getLogger()
 

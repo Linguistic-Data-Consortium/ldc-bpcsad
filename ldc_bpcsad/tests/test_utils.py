@@ -1,7 +1,7 @@
 """Tests for utility functions."""
 import pytest
 
-from seglib.utils import clip
+from ldc_bpcsad.utils import clip
 
 
 def test_clip():

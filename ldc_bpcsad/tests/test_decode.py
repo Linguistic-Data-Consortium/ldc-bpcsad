@@ -2,19 +2,19 @@ import numpy as np
 import pytest
 import soundfile as sf
 
-import seglib.decode
-import seglib.htk
+import ldc_bpcsad.decode
+import ldc_bpcsad.htk
 
 
-orig_hvite = seglib.htk.hvite
+orig_hvite = ldc_bpcsad.htk.hvite
 
 
 # Config for hvite.
 
 @pytest.fixture
 def hvite_config():
-    return seglib.htk.HViteConfig.from_model_dir(
-        seglib.decode.MODEL_DIR)
+    return ldc_bpcsad.htk.HViteConfig.from_model_dir(
+        ldc_bpcsad.decode.MODEL_DIR)
 
 
 # Seed for NumPy RNG.
@@ -39,12 +39,12 @@ def x_nospeech(scale=0.01):
 def hvite_fail_gt40(wav_path, config, working_dir):
     """Version of `hvite` that fails on recordings > 40 seconds duration.
 
-    Used for testing how `seglib.decode._decode_chunk` handles errors.
+    Used for testing how `ldc_bpcsad.decode._decode_chunk` handles errors.
     """
     rec_dur = sf.info(wav_path).duration
     if rec_dur > 40:
-        raise seglib.htk.HTKError
-    return seglib.htk.hvite(wav_path, config, working_dir)
+        raise ldc_bpcsad.htk.HTKError
+    return ldc_bpcsad.htk.hvite(wav_path, config, working_dir)
 
 
 class TestDecodeChunk():
@@ -52,10 +52,10 @@ class TestDecodeChunk():
         # Dcode succeeds for entire 100 chunk recording of silence with NO
         # HVite failures.
         # recording of silence.
-        spy = mocker.spy(seglib.decode, 'hvite')
+        spy = mocker.spy(ldc_bpcsad.decode, 'hvite')
         min_chunk_dur = 10
         min_chunk_len = int(min_chunk_dur*SR)
-        segs = seglib.decode._decode_chunk(
+        segs = ldc_bpcsad.decode._decode_chunk(
             x_nospeech, SR, 0, x_nospeech.size, min_chunk_len, hvite_config)
 
         # Check that no recursion occurred.
@@ -68,11 +68,11 @@ class TestDecodeChunk():
                             mocker):
         # Simulate HVite failure on chunks > 40 seconds using a 100 second
         # recording of silence.
-        monkeypatch.setattr(seglib.decode, 'hvite', hvite_fail_gt40)
-        spy = mocker.spy(seglib.decode, 'hvite')
+        monkeypatch.setattr(ldc_bpcsad.decode, 'hvite', hvite_fail_gt40)
+        spy = mocker.spy(ldc_bpcsad.decode, 'hvite')
         min_chunk_dur = 10
         min_chunk_len = int(min_chunk_dur*SR)
-        segs = seglib.decode._decode_chunk(
+        segs = ldc_bpcsad.decode._decode_chunk(
             x_nospeech, SR, 0, x_nospeech.size, min_chunk_len, hvite_config)
 
         # Check that recursion actually occurred.
@@ -84,16 +84,16 @@ class TestDecodeChunk():
 
 class TestDecode:
     def test_no_chunking(self, x_nospeech, mocker):
-        spy = mocker.spy(seglib.decode, '_decode_chunk')
-        segs = seglib.decode.decode(
+        spy = mocker.spy(ldc_bpcsad.decode, '_decode_chunk')
+        segs = ldc_bpcsad.decode.decode(
             x_nospeech, SR, min_chunk_dur=10, max_chunk_dur=1000)
         assert len(segs) == 0
         assert spy.call_count == 1
 
 
     def test_chunking(self, x_nospeech, mocker):
-        spy = mocker.spy(seglib.decode, '_decode_chunk')
-        segs = seglib.decode.decode(
+        spy = mocker.spy(ldc_bpcsad.decode, '_decode_chunk')
+        segs = ldc_bpcsad.decode.decode(
             x_nospeech, SR, min_chunk_dur=10, max_chunk_dur=40)
         assert len(segs) == 0
         assert spy.call_count == 3

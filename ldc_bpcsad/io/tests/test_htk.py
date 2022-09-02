@@ -1,8 +1,8 @@
 from pathlib import Path
 import pytest
 
-from seglib.io.htk import load_htk_label_file, write_htk_label_file
-from seglib.segment import Segment
+from ldc_bpcsad.io.htk import load_htk_label_file, write_htk_label_file
+from ldc_bpcsad.segment import Segment
 
 
 @pytest.fixture

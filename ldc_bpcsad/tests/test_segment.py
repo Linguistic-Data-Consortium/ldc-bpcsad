@@ -1,7 +1,7 @@
 """Tests for `Segment`."""
 import pytest
 
-from seglib.segment import merge_segs, Segment
+from ldc_bpcsad.segment import merge_segs, Segment
 
 
 def assert_turn_equal(t1, t2, excluded_fields=None):
