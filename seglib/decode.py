@@ -82,7 +82,7 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
     try:
         # Base case: HVite finishes successfully; return segments.
         logger.debug(
-            f'Attempting decoding for chunk: RECORDING_DUR: {rec_dur:.3f}, '
+            f'Attempting decoding for chunk:   RECORDING_DUR: {rec_dur:.3f}, '
             f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
             f'CHUNK_OFFSET: {chunk_offset:.3f}')
         wav_path = tmp_dir / 'chunk.wav'
@@ -93,10 +93,14 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
             lab_path, target_labels=['speech'], in_sec=False)
         segs = [seg.shift(chunk_onset) for seg in segs]
         logger.debug(
-            f'Successfully decoded chunk:    RECORDING_DUR: {rec_dur:.3f}, '
+            f'Decoding succeeded for chunk:    RECORDING_DUR: {rec_dur:.3f}, '
             f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
             f'CHUNK_OFFSET: {chunk_offset:.3f}')
     except HTKError:
+        logger.debug(
+            f'Decoding failed for chunk:       RECORDING_DUR: {rec_dur:.3f}, '
+            f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
+            f'CHUNK_OFFSET: {chunk_offset:.3f}')
         # Recursive case: Retry HVite on two shorter chunks.
         mid = (bi + ei) // 2
         segs = _decode_chunk(x, sr, bi, mid, min_chunk_len, hvite_config)
@@ -109,7 +113,7 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
 
 
 def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
-            min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1):
+           min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1):
     """Perform speech activity detection on a single channel of an audio file.
 
     The resulting segmentation will be saved in an HTK label file in

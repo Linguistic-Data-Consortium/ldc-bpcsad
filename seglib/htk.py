@@ -77,7 +77,6 @@ def hvite(wav_path, config, working_dir):
     try:
         subprocess.run(cmd, check=True)
     except CalledProcessError:
-        print(999)
         raise HTKError
     return wav_path.with_suffix('.lab')
 
