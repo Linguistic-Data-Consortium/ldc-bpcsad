@@ -82,36 +82,20 @@ Pitt, M. A., Dilley, L., Johnson, K., Kiesling, S., Raymond, W., Hume, E.,
 import argparse
 from dataclasses import dataclass
 from functools import partial
-from math import log
 import multiprocessing
-import os
+import multiprocessing.dummy
 from pathlib import Path
-import shutil
-import subprocess
 import sys
-import tempfile
 
+import soundfile as sf
 from tqdm import tqdm
 
-from seglib import __version__ as VERSION
-from seglib.io import read_label_file, read_script_file, write_label_file
-from seglib.logging import getLogger, setup_logger, WARNING
-from seglib.utils import (arange, concat_segs, convert_to_wav, elim_short_segs,
-                          get_dur, merge_segs)
+from ldc_bpcsad import __version__ as VERSION
+from ldc_bpcsad.io import write_htk_label_file
+from ldc_bpcsad.logging import getLogger, setup_logger, DEBUG, WARNING
+from ldc_bpcsad.decode import decode
 
 logger = getLogger()
-setup_logger(logger, level=WARNING)
-
-
-@dataclass
-class HTKConfig:
-    """TODO"""
-    phone_net_path: Path
-    macros_path: Path
-    hmmdefs_path: Path
-    config_path: Path
-    dict_path: Path
-    monophones_path: Path
 
 
 @dataclass
@@ -123,9 +107,6 @@ class Channel:
     uri : str
         Channel URI.
 
-    rec_uri : str
-        Recording URI.
-
     audio_pat : Path
         Path to audio file channel is one.
 
@@ -136,184 +117,87 @@ class Channel:
     audio_path: Path
     channel: int
 
-    @property
-    def duration(self):
-        """Duration in seconds."""
-        return get_dur(self.audio_path)
 
+def read_script_file(scp_path):
+    """Read Kaldi or HTK script file.
+    The script file is expected to be in one of two formats:
 
-class SegmentationError(BaseException): pass
+    - Kaldi
+      Each line contains has two whitespace delimited fields:
+      - uri  --  a uniform resource identifier for the file
+      - path  --  the path to the file
+    - HTK
+      Each line consists of a file path.
 
-
-def _segment_chunk(channel, onset, offset, htk_config):
-    """Segment chunk of channel from audio file."""
-    # Create directory to hold intermediate segmentations.
-    tmp_dir = Path(tempfile.mkdtemp())
-
-    # Convert to WAV and trim to chunk.
-    chunk_uri = f'{channel.uri}_{onset:.3f}_{offset:.3f}'
-    wav_path = Path(tmp_dir, chunk_uri + '.wav')
-    convert_to_wav(wav_path, channel.audio_path, channel.channel, onset, offset)
-
-    # Segment.
-    cmd = ['HVite',
-           '-T', '0',
-           '-w', str(htk_config.phone_net_path),
-           '-l', str(tmp_dir),
-           '-H', str(htk_config.macros_path),
-           '-H', str(htk_config.hmmdefs_path),
-           '-C', str(htk_config.config_path),
-           '-p', '-0.3',
-           '-s', '5.0',
-           '-y', 'lab',
-           str(htk_config.dict_path),
-           str(htk_config.monophones_path),
-           wav_path,
-          ]
-    with open(os.devnull, 'wb') as f:
-        subprocess.call(cmd, stdout=f, stderr=f)
-    try:
-        lab_path = Path(tmp_dir, chunk_uri + '.lab')
-        segs = read_label_file(lab_path, in_sec=False)
-    except:
-        raise SegmentationError
-    finally:
-        shutil.rmtree(tmp_dir)
-
-    return segs
-
-
-def segment_file(channel, htk_config, args):
-    """Perform speech activity detection on a single channel of an audio file.
-
-    The resulting segmentation will be saved in an HTK label file in
-    ``lab_dir`` with the same name as ``audio_path`` but file extension ``ext``.
+    For HTK format script files, URIs will be deduced automatically from the
+    file's basename.
 
     Parameters
     ----------
-    channel : Channel
-        Audio channel to perform SAD on.
-
-    htk_config : HTKConfig
-        HTK configuration.
-
-    args: argparse.Namespace
-        Arguments passed via command-line.
+    scp_path : Path
+        Path to script file.
 
     Returns
     -------
-    msgs : iterable of str
-        Warning messages to pass to user.
+    paths : dict
+        Mapping from URIs to paths.
     """
-    rec_dur = channel.duration  # Duration of recording.
-    max_chunk_dur = min(args.max_chunk_dur, channel.duration)
-    min_chunk_dur = min(args.min_chunk_dur, channel.duration)
-    while max_chunk_dur >= min_chunk_dur:
-        try:
-            # Split recording into chunks of at most 3000 seconds.
-            if rec_dur > max_chunk_dur:
-                bounds = arange(0, rec_dur, max_chunk_dur)
-                suffix_dur = rec_dur - bounds[-1]
-                if suffix_dur < min_chunk_dur:
-                    # Absorb remainder of recording into final chunk.
-                    bounds[-1] = rec_dur
-                else:
-                    # Add in one final chunk to cover the remainder. Duration is
-                    # smaller than the other chunks, but still > our minimum
-                    # duration for segmentation.
-                    bounds.append(rec_dur)
+    scp_path = Path(scp_path)
+    paths = {}
+    with open(scp_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            fields = line.strip().split()
+            if len(fields) > 2:
+                logger.warning(
+                    f'Too many fields in line of script file "{scp_path}".'
+                    f'Skipping.')
+                continue
+            fpath = Path(fields[-1])
+            if len(fields) == 2:
+                uri = fields[0]
             else:
-                bounds = [0.0, rec_dur]
-            chunks = list(zip(bounds[:-1], bounds[1:]))
-
-            # Segment chunks.
-            seg_seqs = []
-            for onset, offset in chunks:
-                segs = _segment_chunk(channel, onset, offset, htk_config)
-                dur = offset - onset
-                segs[-1][1] = dur
-                seg_seqs.append(segs)
-            segs = concat_segs(seg_seqs, rec_dur)
-
-            # Postprocess segmentation:
-            # - merge adjacent segments with same level
-            # - eliminate short nonspeech segments
-            # - eliminate short speech segments
-            segs = merge_segs(segs)
-            segs = elim_short_segs(
-                segs, target_lab='nonspeech', replace_lab='speech',
-                min_dur=args.min_nonspeech_dur)
-            segs = merge_segs(segs)
-            segs = elim_short_segs(
-                segs, target_lab='speech', replace_lab='nonspeech',
-                min_dur=args.min_speech_dur)
-            segs = merge_segs(segs)
-
-            # Write.
-            lab_path = Path(args.lab_dir, channel.uri + args.ext)
-            write_label_file(lab_path, segs)
-
-            return
-        except SegmentationError:
-            max_chunk_dur /= 2.
-    return
+                uri = fpath.stem
+                logger.warning(
+                    f'No URI specified for file "{fpath}". '
+                    f'Setting using basename: "{uri}".')
+            if uri in paths:
+                logger.warning(
+                    f'Duplicate URI "{uri}" detected. Skipping.')
+                continue
+            paths[uri] = fpath
+    return paths
 
 
-def parallel_wrapper(channel, htk_config, args):
-    """Wrapper around `segment_file` for use with multiprocessing."""
+def parallel_wrapper(channel, args):
+    """Wrapper around `decode` for use with multiprocessing."""
+    # Warning messages are collected and handled in calling process due to
+    # potential ugly interactions with multiprocessing and tqdm. This can be
+    # avoided at cost of an additional dependency by using the
+    # multiprocessing-logging package:
+    #
+    #     https://github.com/jruere/multiprocessing-logging
+    #
+    # TODO: Re-evaluate decision to use multiprocessing-logging.
     msgs = []  # Warning messages to display to user.
     try:
-        segment_file(channel, htk_config=htk_config, args=args)
-    except:
+        with open(channel.audio_path, 'rb') as f:
+            x, sr = sf.read(f)
+        if x.ndim > 1:
+            x = x[:, channel.channel-1]
+        segs = decode(
+            x, sr, min_speech_dur=args.min_speech_dur,
+            min_nonspeech_dur=args.min_nonspeech_dur,
+            min_chunk_dur=args.min_chunk_dur, max_chunk_dur=args.max_chunk_dur,
+            speech_scale_factor=args.speech_scale_factor)
+        lab_path = Path(args.lab_dir, channel.uri + args.ext)
+        rec_dur = len(x) / sr
+        write_htk_label_file(lab_path, segs, rec_dur=rec_dur, is_sorted=True)
+    except Exception as e:
         msgs.append(f'SAD failed for "{channel.audio_path}". Skipping.')
     return msgs
 
 
-def write_hmmdefs(old_hmmdefs_path, new_hmmdefs_path, speech_scale_factor=1):
-    """Modify an HTK hmmdefs file in which speech model acoustic likelihoods
-    are scaled by ``speech_scale_factor``.
-
-    Parameters
-    ----------
-    old_hmmdefs_path : Path
-        Path to original HTK hmmdefs file.
-
-    new_hmmsdefs_path : str
-        Path for modified HTK hmmdefs file. If file already exists, it
-        will be overwritten.
-
-    speech_scale_factor : float, optional
-        Factor by which speech model acoustic likelihoods are scaled prior to
-        beam search. Larger values will bias the SAD engine in favour of more
-        speech segments.
-        (Default: 1)
-    """
-    old_hmmdefs_path = Path(old_hmmdefs_path)
-    new_hmmdefs_path = Path(new_hmmdefs_path)
-
-    with open(old_hmmdefs_path, 'r', encoding='utf-8') as f:
-        with open(new_hmmdefs_path, 'w', encoding='utf-8') as g:
-            # Header.
-            for _ in range(3):
-                g.write(f.readline())
-
-            # Model definitions.
-            curr_phone = None
-            for line in f:
-                if line.startswith('~h'):
-                    curr_phone = line[3:].strip('\"\n')
-                if line.startswith('<GCONST>') and curr_phone != 'nonspeech':
-                    # Modify GCONST only for mixtures of speech models.
-                    gconst = float(line[9:-1])
-                    gconst += log(speech_scale_factor)
-                    line = f'<GCONST> {gconst:.6e}\n'
-                g.write(line)
-
-
 def main():
-    script_dir = Path(__file__).parent
-
-    # Parse command line args.
     parser = argparse.ArgumentParser(
         description='Perform speech activity detection on audio files.',
         add_help=True,
@@ -361,6 +245,9 @@ def main():
         '--disable-progress', default=False, action='store_true',
         help='disable progress bar')
     parser.add_argument(
+        '--debug', default=False, action='store_true',
+        help='enable DEBUG mode')
+    parser.add_argument(
         '--n-jobs', '-j', nargs=None, default=1, type=int, metavar='INT',
         dest='n_jobs', help='set num threads to use (Default: %(default)s)')
     parser.add_argument(
@@ -370,39 +257,36 @@ def main():
         sys.exit(1)
     args = parser.parse_args()
 
+    # Set up logger.
+    log_level = DEBUG if args.debug else WARNING
+    setup_logger(logger, level=log_level)
+
     # Load paths from script file.
     if args.scp_path is not None:
         audio_paths = read_script_file(args.scp_path)
     elif args.audio_path:
-        audio_paths = {audio_path.name : audio_path for audio_path in args.audio_path}
+        audio_paths = {audio_path.stem : audio_path for audio_path in args.audio_path}
     else:
         return
     args.n_jobs = min(len(audio_paths), args.n_jobs)
 
-    # Modify GMM weights to account for speech scale factor.
-    old_hmmdefs_path = Path(script_dir, 'model', 'hmmdefs')
-    new_hmmdefs_path = Path(tempfile.mktemp())
-    write_hmmdefs(old_hmmdefs_path, new_hmmdefs_path, args.speech_scale_factor)
-
     # Perform SAD on files in parallel.
-    htk_config = HTKConfig(Path(script_dir, 'model', 'phone_net'),
-                           Path(script_dir, 'model', 'macros'),
-                           new_hmmdefs_path,
-                           Path(script_dir, 'model', 'config'),
-                           Path(script_dir, 'model', 'dict'),
-                           Path(script_dir, 'model', 'monophones'))
     channels = [Channel(uri, audio_path, args.channel)
                 for uri, audio_path in audio_paths.items()]
-    with multiprocessing.Pool(args.n_jobs) as pool:
-        f = partial(parallel_wrapper, htk_config=htk_config, args=args)
+    args.n_jobs = min(args.n_jobs, len(channels))
+    if args.debug:
+        logger.warning(
+            'Flag "--n-jobs" is ignored for debug mode. Using single-threaded '
+            'implementation.')
+        args.n_jobs = 1
+    Pool = multiprocessing.Pool if args.n_jobs > 1 else multiprocessing.dummy.Pool
+    with Pool(args.n_jobs) as pool:
+        f = partial(parallel_wrapper, args=args)
         with tqdm(total=len(channels), disable=args.disable_progress) as pbar:
             for msgs in pool.imap(f, channels):
                 for msg in msgs:
                     logger.warning(msg)
                 pbar.update(1)
-
-    # Remove temporary hmmdefs file.
-    new_hmmdefs_path.unlink()
 
 
 if __name__ == '__main__':
