@@ -168,6 +168,8 @@ def merge_segs(segs, thresh=0.0, is_sorted=False, copy=True):
     list of Segment
         Merged segments.
     """
+    if not segs:
+        return []
     if copy:
         segs = [seg.copy() for seg in segs]
     if not is_sorted:
