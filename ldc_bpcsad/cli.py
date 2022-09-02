@@ -271,6 +271,7 @@ def main():
     args.n_jobs = min(len(audio_paths), args.n_jobs)
 
     # Perform SAD on files in parallel.
+    args.lab_dir.mkdir(parents=True, exist_ok=True)
     channels = [Channel(uri, audio_path, args.channel)
                 for uri, audio_path in audio_paths.items()]
     args.n_jobs = min(args.n_jobs, len(channels))
