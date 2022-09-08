@@ -82,6 +82,7 @@ Pitt, M. A., Dilley, L., Johnson, K., Kiesling, S., Raymond, W., Hume, E.,
 import argparse
 from dataclasses import dataclass
 from functools import partial
+import json
 import multiprocessing
 import multiprocessing.dummy
 from pathlib import Path
@@ -105,10 +106,11 @@ class Channel:
     Parameters
     ----------
     uri : str
-        Channel URI.
+        Uniform resource identifier (URI) of channel. Used to name output file
+        containing SAD output.
 
-    audio_pat : Path
-        Path to audio file channel is one.
+    audio_path : Path
+        Path to audio file channel is on.
 
     channel : int
         Channel number on audio file (1-indexed).
@@ -117,55 +119,126 @@ class Channel:
     audio_path: Path
     channel: int
 
+    def __post_init__(self):
+        self.audio_path = Path(self.audio_path)
+        self.channel = int(self.channel)
 
-def read_script_file(scp_path):
-    """Read Kaldi or HTK script file.
-    The script file is expected to be in one of two formats:
 
-    - Kaldi
-      Each line contains has two whitespace delimited fields:
-      - uri  --  a uniform resource identifier for the file
-      - path  --  the path to the file
-    - HTK
-      Each line consists of a file path.
+    def validate(self, log=True):
+        """Return True if channel is valid."""
+        if not self.audio_path.exists():
+            if log:
+                logger.warning(
+                    f'Audio file does not exist. Skipping. '
+                    f'FILE: "{self.audio_path}", CHANNEL: {self.channel}')
+            return False
+        try:
+            info = sf.info(self.audio_path)
+        except Exception as e:
+            if log:
+                logger.warning(
+                    f'Problem reading audio file header. Skipping. '
+                    f'FILE: "{self.audio_path}", CHANNEL: {self.channel}')
+            return False
+        if not (1 <= self.channel <= info.channels):
+            if log:
+                logger.warning(
+                    f'Invalid channel. Skipping. '
+                    f'FILE: "{self.audio_path}", CHANNEL: {self.channel}')
+            return False
+        return True
 
-    For HTK format script files, URIs will be deduced automatically from the
-    file's basename.
+
+def load_htk_script_file(fpath, channel=1):
+    """Read channels to process from HTK script file.
+
+    An HTK script file specifies a set of file paths, each path separated by a
+    newline; e.g.:
+
+        /data/flac/rec01.flac
+        /data/flac/rec02.flac
+        /data/flac/rec03.flac
 
     Parameters
     ----------
-    scp_path : Path
+    fpath : Path
+        Path to script file.
+
+    channel : int, optional
+        Channel number (1-indexed) to perform SAD on for each file.
+        (Default: 1)
+
+    Returns
+    -------
+    list of Channel
+        Channels to perform SAD on.
+    """
+    channels = []
+    with open(fpath, 'r', encoding='utf-8') as f:
+        for line in f:
+            audio_path = Path(line.strip())
+            uri = audio_path.stem
+            chan = Channel(uri, audio_path, channel)
+            channels.append(chan)
+    return channels
+
+
+def load_json_script_file(fpath):
+    """Read channels to process from JSON file.
+
+    The JSON file should consist of a sequence of JSON objects, each containing
+    the following three key-valiue pairs:
+
+    - uri  --  Uniform resource identifier (URI) of channel. Used to name
+      output file containing SAD output.
+    - audio_path  --  Path to audio file that the channel is on.
+    - channel  --  Channel number of audio file to process (1-indexed).
+
+    For instance:
+
+        ```json
+        [{
+            "uri": "rec01_c1",
+            "audio_path": "/data/flac/rec01.flac",
+            "channel": 1
+        }, {
+            "uri": "rec01_c2",
+            "audio_path": "/data/flac/rec01.flac",
+            "channel": 2
+        }, {
+            "uri": "rec02_c1",
+            "audio_path": "/data/flac/rec02.flac",
+            "channel": 1
+        }]
+        ```
+
+    Parameters
+    ----------
+    fpath : Path
         Path to script file.
 
     Returns
     -------
-    paths : dict
-        Mapping from URIs to paths.
+    list of Channel
+        Channels to perform SAD on.
     """
-    scp_path = Path(scp_path)
-    paths = {}
-    with open(scp_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            fields = line.strip().split()
-            if len(fields) > 2:
-                logger.warning(
-                    f'Too many fields in line of script file "{scp_path}".'
-                    f'Skipping.')
-                continue
-            fpath = Path(fields[-1])
-            if len(fields) == 2:
-                uri = fields[0]
-            else:
-                uri = fpath.stem
-                logger.warning(
-                    f'No URI specified for file "{fpath}". '
-                    f'Setting using basename: "{uri}".')
-            if uri in paths:
-                logger.warning(
-                    f'Duplicate URI "{uri}" detected. Skipping.')
-                continue
-            paths[uri] = fpath
-    return paths
+    with open(fpath, 'r', encoding='utf-8') as f:
+        records = json.load(f)
+    channels = []
+    for record in records:
+        try:
+            channel = Channel(
+                record['uri'], Path(record['audio_path']),
+                int(record['channel']))
+        except Exception as e:
+            channel = None
+        if not channel:
+            logger.warning(
+                f'Malformed record in JSON script file. Skipping. '
+                f'SCRIPT FILE: {fpath}, RECORD: {record}')
+            continue
+        channels.append(channel)
+    return channels
 
 
 def parallel_wrapper(channel, args):
@@ -187,7 +260,6 @@ def parallel_wrapper(channel, args):
         segs = decode(
             x, sr, min_speech_dur=args.min_speech_dur,
             min_nonspeech_dur=args.min_nonspeech_dur,
-            min_chunk_dur=args.min_chunk_dur, max_chunk_dur=args.max_chunk_dur,
             speech_scale_factor=args.speech_scale_factor)
         lab_path = Path(args.lab_dir, channel.uri + args.ext)
         rec_dur = len(x) / sr
@@ -206,8 +278,19 @@ def main():
         'audio_path', metavar='audio-path', type=Path, nargs='*',
         help='audio files to be processed')
     parser.add_argument(
-        '-S', metavar='PATH', type=Path, dest='scp_path',
-        help='set script file (Default: %(default)s)')
+        '--htk-scp', metavar='HTK-PATH', type=Path, dest='htk_scp_path',
+        help='read audio files from HTK script file HTK-PATH '
+             '(Default: %(default)s)')
+    parser.add_argument(
+        '--channel', nargs=None, default=1, type=int, metavar='CHAN',
+        dest='channel',
+        help='channel (1-indexed) to process on each audio file '
+             '(Default: %(default)s)')
+    parser.add_argument(
+        '--json-scp', metavar='JSON-PATH', type=Path,
+        dest='json_scp_path',
+        help='read channels to process from JSON script file JSON-PATH '
+             '(Default: %(default)s)')
     parser.add_argument(
         '-L', metavar='PATH', type=Path, dest='lab_dir', default=Path.cwd(),
         help="set output label dir (Default: %(default)s)")
@@ -228,20 +311,6 @@ def main():
         dest='min_nonspeech_dur',
         help='set min nonspeech duration in seconds (Default: %(default)s)')
     parser.add_argument(
-        '--channel', nargs=None, default=1, type=int, metavar='INT',
-        dest='channel',
-        help='channel (1-indexed) to use (Default: %(default)s)')
-    parser.add_argument(
-        '--min-chunk-dur', metavar='MIN-CDUR', type=float, default=10,
-        help='minimum duration (seconds) of chunks in recursive splitting'
-             'procedure; used when HVite fails for full recording '
-             '(Default: %(default)s)')
-    parser.add_argument(
-        '--max-chunk-dur', metavar='MAX-CDUR', type=float, default=3600,
-        help='maximum duration (seconds) of chunks in recursive splitting '
-             'procedure; used when HVite fails for full recording '
-             '(Default: %(default)s)')
-    parser.add_argument(
         '--disable-progress', default=False, action='store_true',
         help='disable progress bar')
     parser.add_argument(
@@ -261,19 +330,25 @@ def main():
     log_level = DEBUG if args.debug else WARNING
     setup_logger(logger, level=log_level)
 
-    # Load paths from script file.
-    if args.scp_path is not None:
-        audio_paths = read_script_file(args.scp_path)
-    elif args.audio_path:
-        audio_paths = {audio_path.stem : audio_path for audio_path in args.audio_path}
+    # Load and validate channels.
+    # TODO: Check for conflicts.
+    if args.htk_scp_path:
+        channels = load_htk_script_file(
+            args.htk_scp_path, channel=args.channel)
+    elif args.json_scp_path:
+        channels = load_json_script_file(args.json_scp_path)
     else:
+        channels = []
+        for audio_path in args.audio_path:
+            channels.append(Channel(audio_path.stem, audio_path, args.channel))
+    channels = [channel for channel in channels if channel.validate(log=True)]
+    # TODO: Check for dupes.
+    if not channels:
         return
-    args.n_jobs = min(len(audio_paths), args.n_jobs)
+
 
     # Perform SAD on files in parallel.
     args.lab_dir.mkdir(parents=True, exist_ok=True)
-    channels = [Channel(uri, audio_path, args.channel)
-                for uri, audio_path in audio_paths.items()]
     args.n_jobs = min(args.n_jobs, len(channels))
     if args.debug:
         logger.warning(
