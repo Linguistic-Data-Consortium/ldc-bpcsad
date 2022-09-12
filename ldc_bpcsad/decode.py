@@ -96,7 +96,7 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
             f'Decoding succeeded for chunk:    RECORDING_DUR: {rec_dur:.3f}, '
             f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
             f'CHUNK_OFFSET: {chunk_offset:.3f}')
-    except HTKError:
+    except HTKError as e:
         logger.debug(
             f'Decoding failed for chunk:       RECORDING_DUR: {rec_dur:.3f}, '
             f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '

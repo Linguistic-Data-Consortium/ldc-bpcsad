@@ -8,6 +8,8 @@ from pathlib import Path
 import subprocess
 from subprocess import CalledProcessError
 
+from .utils import which
+
 __all__ = ['HTKError', 'HViteConfig', 'hvite', 'write_hmmdefs']
 
 
@@ -58,6 +60,13 @@ def hvite(wav_path, config, working_dir):
     lab_path : Path
         Path to output label file.
     """
+    # Check that HVite exists.
+    # TODO: Update link when docs are online.
+    if not which('HVite'):
+        raise HTKError(
+            f'HVite is not installed. Please install HTK and try again: '
+            f'[INSERT LINK TO INSTRUCTIONS HERE]')
+
     # Run HVite.
     wav_path = Path(wav_path)
     cmd = ['HVite',

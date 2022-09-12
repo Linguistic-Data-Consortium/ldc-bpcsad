@@ -92,9 +92,10 @@ import soundfile as sf
 from tqdm import tqdm
 
 from ldc_bpcsad import __version__ as VERSION
+from ldc_bpcsad.decode import decode
 from ldc_bpcsad.io import write_htk_label_file
 from ldc_bpcsad.logging import getLogger, setup_logger, DEBUG, WARNING
-from ldc_bpcsad.decode import decode
+from ldc_bpcsad.utils import which
 
 logger = getLogger()
 
@@ -329,6 +330,14 @@ def main():
     # Set up logger.
     log_level = DEBUG if args.debug else WARNING
     setup_logger(logger, level=log_level)
+
+    # Ensure HTK is installed.
+    if not which('HVite'):
+        # TODO: Update link when docs are online.
+        logger.error(
+            f'HVite is not installed. Please install HTK and try again: '
+            f'[INSERT LINK TO INSTRUCTIONS HERE]')
+        sys.exit(1)
 
     # Load and validate channels.
     # TODO: Check for conflicts.
