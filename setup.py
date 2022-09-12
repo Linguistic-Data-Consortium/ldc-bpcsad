@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Copyright (c) 2012-2022, Trustees of the University of Pennsylvania
+# Authors: nryant@ldc.upenn.edu (Neville Ryant)
+# License: BSD 2-clause
 from setuptools import setup, find_packages
 
 import versioneer
