@@ -3,6 +3,7 @@
 # License: BSD 2-clause
 """Labeled segments."""
 from dataclasses import dataclass
+import math
 
 from .utils import add_dataclass_slots, clip
 
@@ -111,6 +112,48 @@ class Segment:
         self.onset = round(self.onset, precision)
         self.offset = round(self.offset, precision)
         return self
+
+    def isclose(self, other, atol=1e-7):
+        """Return True if onsets/offsets of segments are equal within a
+        tolerance.
+
+        Parameters
+        ----------
+        other : Segment
+            Segment to compare with.
+
+        atol : float, optional
+            Times within ``abs_tol`` seconds are considered close.
+            (Default: 1e-7)
+        """
+        return (math.isclose(self.onset, other.onset, abs_tol=atol) and
+                math.isclose(self.offset, other.offset, abs_tol=atol))
+
+    @staticmethod
+    def allclose(lsegs, rsegs, atol=1e-7):
+        """Return True if two lists of segments are element-wise equal within a
+        tolerance.
+
+        Two segments are considered equal if their onsets/offsets are within
+        ``atol`` of each other.
+
+        Parameters
+        ----------
+        lsegs, rsegs : iterable of Segment
+            Input lists to compare.
+
+        atol : float, optional
+            Times within ``abs_tol`` seconds are considered close.
+            (Default: 1e-7)
+        """
+        lsegs = list(lsegs)
+        rsegs = list(rsegs)
+        if not len(lsegs) == len(rsegs):
+            return False
+        for lseg, rseg in zip(lsegs, rsegs):
+            if not lseg.isclose(rseg, atol=atol):
+                return False
+        return True
 
     @property
     def duration(self):

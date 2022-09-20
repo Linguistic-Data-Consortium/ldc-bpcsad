@@ -7,19 +7,6 @@ import pytest
 from ldc_bpcsad.segment import merge_segs, Segment
 
 
-def assert_turn_equal(t1, t2, excluded_fields=None):
-    if excluded_fields is None:
-        excluded_fields = set()
-    try:
-        assert type(t1) is type(t2)
-        for field in t1.__dataclass_fields__:
-            if field in excluded_fields:
-                continue
-            assert getattr(t1, field) == getattr(t2, field)
-    except AssertionError:
-        raise AssertionError
-
-
 class TestSegment:
     def test_creation(self):
         s = Segment(0, 1)
@@ -86,6 +73,29 @@ class TestSegment:
         s1 = s.copy()
         s1.round(3, in_place=True)
         assert s1 == s_rounded
+
+    def test_isclose(self):
+        # Delta within tolerance.
+        isclose = Segment.isclose
+        assert isclose(Segment(0, 1.1), Segment(0, 1.101), atol=1e-3)
+
+        # Delta outside tolerance.
+        assert not isclose(Segment(0, 1.1), Segment(0, 1.101), atol=1e-4)
+
+    def test_allclose(self):
+        allclose = Segment.allclose
+        segs1 =	[Segment(0, 1.1), Segment(2, 3.1)]
+        segs2 = [Segment(0, 1.1), Segment(2, 3.101)]
+
+        # Delta within tolerance.
+        assert allclose(segs1, segs2, atol=1e-3)
+
+        # Delta outside tolerance.
+        assert not allclose(segs1, segs2, atol=1e-4)
+
+        # Return False on differing segment counts.
+        assert not allclose(segs1, [])
+
 
     def test_duration(self):
         s = Segment(0, 1)
