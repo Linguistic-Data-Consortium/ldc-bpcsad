@@ -155,6 +155,59 @@ class Segment:
                 return False
         return True
 
+    @staticmethod
+    def merge_segs(segs, thresh=0.0, is_sorted=False, copy=True):
+        """Merge segments.
+
+        Produces a new segmentation from `segs` by:
+
+        - merging overlapping segments
+        - merging segments separated by <= `thresh` seconds.
+
+        Parameters
+        ----------
+        segs : list of Segment
+            Segments to be merged.
+
+        thresh : float, optional
+            Tolerance for merging. Segments separated by <= `thresh` seconds
+            will be merged.
+            (Default: 0.0)
+
+        is_sorted : bool, optional
+            If True, treat `segs` as already sorted. Otherwise, sort before
+            performing mergers.
+            (Default: False)
+
+        copy : bool, optional
+            If True, create copy of `segs` and perform merger on this copy.
+            (Default: True)
+
+        Returns
+        -------
+        list of Segment
+            Merged segments.
+        """
+        if not segs:
+            return []
+        if copy:
+            segs = [seg.copy() for seg in segs]
+        if not is_sorted:
+            segs = sorted(segs)
+
+        # Perform merger.
+        merged_segs = []
+        curr_seg = segs[0]
+        for seg in segs:
+            gap = curr_seg ^ seg
+            if gap.duration > thresh:
+                merged_segs.append(curr_seg)
+                curr_seg = seg
+            curr_seg = curr_seg | seg
+        merged_segs.append(curr_seg)
+
+        return merged_segs
+
     @property
     def duration(self):
         """Segment duration in seconds."""
@@ -180,56 +233,3 @@ class Segment:
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-
-def merge_segs(segs, thresh=0.0, is_sorted=False, copy=True):
-    """Merge segments.
-
-    Produces a new segmentation from `segs` by:
-
-    - merging overlapping segments
-    - merging segments separated by <= `thresh` seconds.
-
-    Parameters
-    ----------
-    segs : list of Segment
-        Segments to be merged.
-
-    thresh : float, optional
-        Tolerance for merging. Segments separated by <= `thresh` seconds
-        will be merged.
-        (Default: 0.0)
-
-    is_sorted : bool, optional
-        If True, treat `segs` as already sorted. Otherwise, sort before
-        performing mergers.
-        (Default: False)
-
-    copy : bool, optional
-        If True, create copy of `segs` and perform merger on this copy.
-        (Default: True)
-
-    Returns
-    -------
-    list of Segment
-        Merged segments.
-    """
-    if not segs:
-        return []
-    if copy:
-        segs = [seg.copy() for seg in segs]
-    if not is_sorted:
-        segs = sorted(segs)
-
-    # Perform merger.
-    merged_segs = []
-    curr_seg = segs[0]
-    for seg in segs:
-        gap = curr_seg ^ seg
-        if gap.duration > thresh:
-            merged_segs.append(curr_seg)
-            curr_seg = seg
-        curr_seg = curr_seg | seg
-    merged_segs.append(curr_seg)
-
-    return merged_segs

@@ -11,7 +11,7 @@ import soundfile as sf
 from .htk import hvite, write_hmmdefs, HTKError, HViteConfig
 from .io import load_htk_label_file
 from .logging import getLogger
-from .segment import merge_segs
+from .segment import Segment
 from .utils import resample
 
 __all__ = ['decode']
@@ -211,7 +211,7 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
         #   - merging speech segments separated by < min_nonspeech_dur seconds
         #   - filtering speech segments < min_speech_dur seconds
         min_nonspeech_dur = max(min_nonspeech_dur, 0.010)  # Gaps < 10 ms are artifacts.
-        segs = merge_segs(segs, thresh=min_nonspeech_dur, copy=False)
+        segs = Segment.merge_segs(segs, thresh=min_nonspeech_dur, copy=False)
         if segs:
             # Extend speech segments at beginning/end of recording if the
             # adjacent gaps are <= min_speech_dur seconds.

@@ -4,7 +4,18 @@
 """Tests for `Segment`."""
 import pytest
 
-from ldc_bpcsad.segment import merge_segs, Segment
+from ldc_bpcsad.segment import Segment
+
+@pytest.fixture
+def segs():
+    return [
+        Segment(7.20, 8.00),
+        Segment(8.25, 9.00),
+        Segment(0.10, 1.45),
+        Segment(4.10, 6.20),
+        Segment(6.20, 7.00),
+        Segment(9.251, 10.00),
+        Segment(0.45, 1.00)]
 
 
 class TestSegment:
@@ -118,52 +129,41 @@ class TestSegment:
         assert seg1.gap(seg2) == seg1 ^ seg2
         assert seg1.gap(seg2) == seg2 ^ seg1
 
+    def test_merge_segs(self, segs):
+        merge_segs = Segment.merge_segs
+        
+        # Test adjacent segments.
+        expected_segs = [Segment(1, 5)]
+        premerge_segs = [
+            Segment(1, 3),
+            Segment(3, 5)]
+        assert expected_segs == merge_segs(premerge_segs)
 
-@pytest.fixture
-def segs():
-    return [
-        Segment(7.20, 8.00),
-        Segment(8.25, 9.00),
-        Segment(0.10, 1.45),
-        Segment(4.10, 6.20),
-        Segment(6.20, 7.00),
-        Segment(9.251, 10.00),
-        Segment(0.45, 1.00)]
+        # Test segments separated by <= collar seconds that are NOT adjacent
+        expected_segs = [Segment(1, 5)]
+        premerge_segs = [
+	    Segment(1, 3),
+            Segment(3.20, 5)]
+        assert expected_segs == merge_segs(premerge_segs, thresh=0.250)
 
+        # Test segments separated by EXACTLY collar seconds.
+        expected_segs = [Segment(1, 5)]
+        premerge_segs = [
+	    Segment(1, 3),
+            Segment(3.25, 5)]
+        assert expected_segs == merge_segs(premerge_segs, thresh=0.250)
 
-def test_merge_segs(segs):
-    # Test adjacent segments.
-    expected_segs = [Segment(1, 5)]
-    premerge_segs = [
-        Segment(1, 3),
-        Segment(3, 5)]
-    assert expected_segs == merge_segs(premerge_segs)
+        # Test segments separated by more than collar seconds.
+        expected_segs = [Segment(1, 3), Segment(3.251, 5)]
+        premerge_segs = [
+	    Segment(1, 3),
+            Segment(3.251, 5)]
+        assert expected_segs == merge_segs(premerge_segs, thresh=0.250)
 
-    # Test segments separated by <= collar seconds that are NOT adjacent
-    expected_segs = [Segment(1, 5)]
-    premerge_segs = [
-	Segment(1, 3),
-        Segment(3.20, 5)]
-    assert expected_segs == merge_segs(premerge_segs, thresh=0.250)
-
-    # Test segments separated by EXACTLY collar seconds.
-    expected_segs = [Segment(1, 5)]
-    premerge_segs = [
-	Segment(1, 3),
-        Segment(3.25, 5)]
-    assert expected_segs == merge_segs(premerge_segs, thresh=0.250)
-
-    # Test segments separated by more than collar seconds.
-    expected_segs = [Segment(1, 3), Segment(3.251, 5)]
-    premerge_segs = [
-	Segment(1, 3),
-        Segment(3.251, 5)]
-    assert expected_segs == merge_segs(premerge_segs, thresh=0.250)
-
-    # Full test.
-    expected_segs = [
-        Segment(0.10, 1.45),
-        Segment(4.10, 9.0),
-        Segment(9.251, 10.00)]
-    assert expected_segs == merge_segs(segs, thresh=0.250)
-    assert expected_segs == merge_segs(sorted(segs), thresh=0.250, is_sorted=True)
+        # Full test.
+        expected_segs = [
+            Segment(0.10, 1.45),
+            Segment(4.10, 9.0),
+            Segment(9.251, 10.00)]
+        assert expected_segs == merge_segs(segs, thresh=0.250)
+        assert expected_segs == merge_segs(sorted(segs), thresh=0.250, is_sorted=True)
