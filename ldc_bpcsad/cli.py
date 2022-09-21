@@ -113,27 +113,27 @@ def load_json_script_file(fpath):
     """Read channels to process from JSON file.
 
     The JSON file should consist of a sequence of JSON objects, each containing
-    the following three key-valiue pairs:
+    the following three key-value pairs:
 
-    - uri  --  Uniform resource identifier (URI) of channel. Used to name
+    - ``uri``  --  Uniform resource identifier (URI) of channel. Used to name
       output file containing SAD output.
-    - audio_path  --  Path to audio file that the channel is on.
-    - channel  --  Channel number of audio file to process (1-indexed).
+    - ``audio_path``  --  Path to audio file that the channel is on.
+    - ``channel``  --  Channel number of audio file to process (1-indexed).
 
     For instance:
 
         ```json
         [{
-            "uri": "rec01_c1",
-            "audio_path": "/data/flac/rec01.flac",
+            "uri": "rec1_c1",
+            "audio_path": "/path/to/rec1.flac",
             "channel": 1
         }, {
-            "uri": "rec01_c2",
-            "audio_path": "/data/flac/rec01.flac",
+            "uri": "rec1_c2",
+            "audio_path": "/path/to/rec1.flac",
             "channel": 2
         }, {
-            "uri": "rec02_c1",
-            "audio_path": "/data/flac/rec02.flac",
+            "uri": "rec2_c1",
+            "audio_path": "/path/to/rec2.flac",
             "channel": 1
         }]
         ```
@@ -213,32 +213,33 @@ def parallel_wrapper(channel, args):
 
 def get_parser():
     """Return `argparse.ArgumentParser`."""
+    audio_formats = ', '.join(sorted(sf.available_formats().values()))
     parser = argparse.ArgumentParser(
         description='Perform speech activity detection on audio files.',
+        epilog=f'audio file formats: {audio_formats}',
         add_help=True)
     parser.add_argument(
         'audio_path', metavar='audio-path', type=Path, nargs='*',
         help='audio files to be processed')
     parser.add_argument(
-        '--htk-scp', metavar='HTK-PATH', type=Path, dest='htk_scp_path',
-        help='read audio files from HTK script file HTK-PATH '
-             '(Default: %(default)s)')
-    parser.add_argument(
-        '--channel', nargs=None, default=1, type=int, metavar='CHAN',
+        '--channel', default=1, type=int, metavar='CHAN',
         dest='channel',
         help='channel (1-indexed) to process on each audio file '
              '(Default: %(default)s)')
     parser.add_argument(
-        '--json-scp', metavar='JSON-PATH', type=Path,
-        dest='json_scp_path',
-        help='read channels to process from JSON script file JSON-PATH '
-             '(Default: %(default)s)')
+        '--scp', metavar='SCP', type=Path,
+        dest='scp_path',
+        help='path to script file (Default: %(default)s)')
+    parser.add_argument(
+        '--scp-fmt', metavar='SCP-FMT', dest='scp_fmt', default='htk',
+        choices=['htk', 'json'],
+        help='script file format (Default: %(default)s)')
     parser.add_argument(
         '--output-dir', metavar='OUTPUT-DIR', type=Path, dest='output_dir',
         default=Path.cwd(),
         help="output segmentations to OUTPUT-DIR (Default: current directory)")
     parser.add_argument(
-        '--output-fmt', metavar='FMT', default='htk',
+        '--output-fmt', metavar='OUTPUT-FMT', default='htk',
         choices=['audacity', 'htk', 'rttm', 'textgrid'],
         help='output file format (Default: %(default)s)')
     parser.add_argument(
@@ -269,7 +270,7 @@ def get_parser():
         '--version', action='version', version='%(prog)s ' + VERSION)
     if len(sys.argv) == 1:
         parser.print_help()
-        sys.exit(1)
+        parser.exit()
     return parser
 
 
@@ -280,7 +281,7 @@ def main():
     # Set up logger.
     log_level = DEBUG if args.debug else WARNING
     setup_logger(logger, level=log_level)
-
+        
     # Ensure HTK is installed.
     if not which('HVite'):
         # TODO: Update link when docs are online.
@@ -290,12 +291,14 @@ def main():
         sys.exit(1)
 
     # Load and validate channels.
-    # TODO: Check for conflicts.
-    if args.htk_scp_path:
-        channels = load_htk_script_file(
-            args.htk_scp_path, channel=args.channel)
-    elif args.json_scp_path:
-        channels = load_json_script_file(args.json_scp_path)
+    if args.scp_path:
+        if args.scp_fmt == 'htk':
+            channels = load_htk_script_file(
+                args.scp_path, channel=args.channel)
+        elif args.scp_fmt == 'json':
+            channels = load_json_script_file(args.scp_path)
+        else:
+            assert False
     else:
         channels = []
         for audio_path in args.audio_path:
