@@ -64,6 +64,4 @@ def test_write_textgrid_file(tg_path, speech_segs, tmpdir):
         actual_path, speech_segs, tier='sad', rec_dur=5.0, is_sorted=True,
         precision=1)
     actual = actual_path.read_text()
-    print(expected)
-    print(actual)
     assert actual == expected
