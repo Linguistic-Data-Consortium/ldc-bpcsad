@@ -15,10 +15,33 @@ __all__ = ['HTKError', 'HViteConfig', 'hvite', 'write_hmmdefs']
 
 @dataclass
 class HViteConfig:
-    """TODO"""
-    phone_net_path: Path
-    macros_path: Path
+    """HVite decoding configuration
+
+    Parameters
+    ----------
+    slf_path : Path
+        Path to HTK SLF file defining the recognition network.
+
+    hmmdefs_path : Path
+        Path to HTK MMF file containing HMM definitions.
+
+    macros_path : Path
+        Path to HTK MMF file containing additional macro definitions (e.g., 
+        variance floors).
+
+    config_path : Path
+        Path to HTK configuration file defining expected source audio format and
+        feature extraction pipeline.
+
+    dict_path : Path
+        Path to pronunciation dictionary.
+
+    monophones_path : Path
+        Path to file listing HMMs to load from the MMF files.
+    """
+    slf_path: Path
     hmmdefs_path: Path
+    macros_path: Path
     config_path: Path
     dict_path: Path
     monophones_path: Path
@@ -29,8 +52,8 @@ class HViteConfig:
         model_dir = Path(model_dir)
         return HViteConfig(
             model_dir / 'phone_net',
-            model_dir / 'macros',
             model_dir / 'hmmdefs',
+            model_dir / 'macros',
             model_dir  / 'config',
             model_dir / 'dict',
             model_dir / 'monophones')
@@ -71,7 +94,7 @@ def hvite(wav_path, config, working_dir):
     wav_path = Path(wav_path)
     cmd = ['HVite',
            '-T', '0',
-           '-w', str(config.phone_net_path),
+           '-w', str(config.slf_path),
            '-l', str(working_dir),
            '-H', str(config.macros_path),
            '-H', str(config.hmmdefs_path),

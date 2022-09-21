@@ -45,8 +45,12 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
 
     Parameters
     ----------
-    x : TODO
-    sr : TODO
+    x : ndarray (n_samples)
+        Audio samples.
+
+    sr : int
+        Sample rate (Hz).
+
     bi : int
         Index of first sample of chunk.
 
@@ -57,7 +61,7 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
         Minimum size of chunk in samples.
 
     hvite_config : HViteConfig
-        TODO
+        Decoder configuration.
     """
     # Convert from samples to seconds for more human-readable exceptions and
     # logging.
@@ -159,7 +163,8 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
 
     Returns
     -------
-    segs : TODO
+    segs : list of Segment
+        Detected speech segments.
 
     Raises
     ------
