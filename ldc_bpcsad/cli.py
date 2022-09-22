@@ -1,87 +1,12 @@
 #!/usr/bin/env python
-# Copyright (c) 2012-2017, Trustees of the University of Pennsylvania
+# Copyright (c) 2012-2022, Trustees of the University of Pennsylvania
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
-"""Perform speech activity detection (SAD) using a GMM-HMM broad phonetic
-class recognizer.
-
-To perform SAD for a set of WAV files and store the segmentations in the
-directory ``label_dir``:
-
-    python perform_sad.py -L label_dir rec1.wav rec2.wav rec3.wav ...
-
-For each of the WAV files ``rec1.wav``, ``rec2.wav``, ``rec3.wav``, ... a
-corresponding label file (``rec1.lab``, ``rec2.lab``, etc) will be created in
-``label_dir``. Label files list the detected speech and non-speech segments
-with one segment per line, each line having the format:
-
-    ONSET OFFSET LAB
-
-where ``ONSET`` and ``OFFSET`` are the onset and offset of the segment in
-seconds and ``LAB`` is one of {speech, nonspeech}. By default these files
-will be output with the extension ``.lab``, though this may be changed via the
-``-X`` flag.
-
-Alternately, we could have specified the WAV files via a script file of paths
-(one per line) using the ``-S`` flag. For instance, assuming ``wav.scp``
-contains lines:
-
-    rec1.wav
-    rec2.wav
-    rec3.wav
-    .
-    .
-    .
-
-then the output of the following will be identical to the original command:
-
-    python perform_sad.py -S wav.scp -L label_dir
-
-**NOTE** that while the preceding examples illustrated SAD using audio in WAV
-format, other formats are supported:
-
-    python perform_sad.py -L label_dir rec1.flac rec2.wav rec3.sph ...
-
-Indeed, any audio file format handled by SoX will work, though the exact
-composition of this set will depend on your system's installation of SoX.
-For a full listing of supported  formats on your system, run ``sox`` from the
-command line without any arguments and check the ``AUDIO FILE FORMATS``
-section at the bottom.
-
-By default the segmenter post-processes the output to eliminate speech segments
-less than 500 ms in duration and nonspeech segments less than 300 ms in
-duration. While these defaults are suitable for SAD that is being done as a
-precursor to transcription by human annotators, they may be restrictive for
-other uses. If necessary, the minimum speech and nonspeech segment durations
-may be changed via the ``--speech`` and ``--nonspeech`` flags respectively.
-For instance, to instead use minimum durations of 250 ms for speech and 100 ms
-for nonspeech:
-
-    python perform_sad.py --speech 0.250 --nonspeech 0.100 \
-                          -L label_dir rec1.wav rec2.wav rec3.wav ...
-
-Tips
-----
-- If the corpus you wish to segment is exceptionally large, consider running
-  in multithreaded mode by setting ``-j n``, where ``n`` is some positive
-  integer. This will instruct the segmenter to partition the input recordings
-  into ``n`` sets, and run on the sets in parallel.
-- If your recordings are particularly sparse, you may wish to alter to
-  reweight the acoustic likelihoods so that speech segments are emphasized
-  relative to non-speech segments. To do this, use the ``-a`` flag, which
-  controls the scaling factor applied to speech model acoustic likelihoods
-  (default is 1).
-
-References
-----------
-Pitt, M. A., Dilley, L., Johnson, K., Kiesling, S., Raymond, W., Hume, E.,
-  and  Fosler-Lussier, E. (2007). Buckeye corpus of conversational speech (2nd
-  release). Columbus, OH: Department of Psychology, Ohio State University.
-  http://buckeyecorpus.osu.edu/
-"""
+"""Perform speech activity detection (SAD) using a GMM-HMM broad phonetic class recognizer."""
 import argparse
 from dataclasses import dataclass
 from functools import partial
+import json
 import multiprocessing
 import multiprocessing.dummy
 from pathlib import Path
@@ -91,9 +16,11 @@ import soundfile as sf
 from tqdm import tqdm
 
 from ldc_bpcsad import __version__ as VERSION
-from ldc_bpcsad.io import write_htk_label_file
-from ldc_bpcsad.logging import getLogger, setup_logger, DEBUG, WARNING
 from ldc_bpcsad.decode import decode
+from ldc_bpcsad.io import (write_audacity_label_file, write_htk_label_file,
+                           write_rttm_file, write_textgrid_file)
+from ldc_bpcsad.logging import getLogger, setup_logger, DEBUG, WARNING
+from ldc_bpcsad.utils import which
 
 logger = getLogger()
 
@@ -105,10 +32,11 @@ class Channel:
     Parameters
     ----------
     uri : str
-        Channel URI.
+        Uniform resource identifier (URI) of channel. Used to name output file
+        containing SAD output.
 
-    audio_pat : Path
-        Path to audio file channel is one.
+    audio_path : Path
+        Path to audio file channel is on.
 
     channel : int
         Channel number on audio file (1-indexed).
@@ -117,55 +45,126 @@ class Channel:
     audio_path: Path
     channel: int
 
+    def __post_init__(self):
+        self.audio_path = Path(self.audio_path)
+        self.channel = int(self.channel)
 
-def read_script_file(scp_path):
-    """Read Kaldi or HTK script file.
-    The script file is expected to be in one of two formats:
 
-    - Kaldi
-      Each line contains has two whitespace delimited fields:
-      - uri  --  a uniform resource identifier for the file
-      - path  --  the path to the file
-    - HTK
-      Each line consists of a file path.
+    def validate(self, log=True):
+        """Return True if channel is valid."""
+        if not self.audio_path.exists():
+            if log:
+                logger.warning(
+                    f'Audio file does not exist. Skipping. '
+                    f'FILE: "{self.audio_path}", CHANNEL: {self.channel}')
+            return False
+        try:
+            info = sf.info(self.audio_path)
+        except Exception as e:
+            if log:
+                logger.warning(
+                    f'Problem reading audio file header. Skipping. '
+                    f'FILE: "{self.audio_path}", CHANNEL: {self.channel}')
+            return False
+        if not (1 <= self.channel <= info.channels):
+            if log:
+                logger.warning(
+                    f'Invalid channel. Skipping. '
+                    f'FILE: "{self.audio_path}", CHANNEL: {self.channel}')
+            return False
+        return True
 
-    For HTK format script files, URIs will be deduced automatically from the
-    file's basename.
+
+def load_htk_script_file(fpath, channel=1):
+    """Read channels to process from HTK script file.
+
+    An HTK script file specifies a set of file paths, each path separated by a
+    newline; e.g.:
+
+        /data/flac/rec01.flac
+        /data/flac/rec02.flac
+        /data/flac/rec03.flac
 
     Parameters
     ----------
-    scp_path : Path
+    fpath : Path
+        Path to script file.
+
+    channel : int, optional
+        Channel number (1-indexed) to perform SAD on for each file.
+        (Default: 1)
+
+    Returns
+    -------
+    list of Channel
+        Channels to perform SAD on.
+    """
+    channels = []
+    with open(fpath, 'r', encoding='utf-8') as f:
+        for line in f:
+            audio_path = Path(line.strip())
+            uri = audio_path.stem
+            chan = Channel(uri, audio_path, channel)
+            channels.append(chan)
+    return channels
+
+
+def load_json_script_file(fpath):
+    """Read channels to process from JSON file.
+
+    The JSON file should consist of a sequence of JSON objects, each containing
+    the following three key-value pairs:
+
+    - ``uri``  --  Uniform resource identifier (URI) of channel. Used to name
+      output file containing SAD output.
+    - ``audio_path``  --  Path to audio file that the channel is on.
+    - ``channel``  --  Channel number of audio file to process (1-indexed).
+
+    For instance:
+
+        ```json
+        [{
+            "uri": "rec1_c1",
+            "audio_path": "/path/to/rec1.flac",
+            "channel": 1
+        }, {
+            "uri": "rec1_c2",
+            "audio_path": "/path/to/rec1.flac",
+            "channel": 2
+        }, {
+            "uri": "rec2_c1",
+            "audio_path": "/path/to/rec2.flac",
+            "channel": 1
+        }]
+        ```
+
+    Parameters
+    ----------
+    fpath : Path
         Path to script file.
 
     Returns
     -------
-    paths : dict
-        Mapping from URIs to paths.
+    list of Channel
+        Channels to perform SAD on.
     """
-    scp_path = Path(scp_path)
-    paths = {}
-    with open(scp_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            fields = line.strip().split()
-            if len(fields) > 2:
-                logger.warning(
-                    f'Too many fields in line of script file "{scp_path}".'
-                    f'Skipping.')
-                continue
-            fpath = Path(fields[-1])
-            if len(fields) == 2:
-                uri = fields[0]
-            else:
-                uri = fpath.stem
-                logger.warning(
-                    f'No URI specified for file "{fpath}". '
-                    f'Setting using basename: "{uri}".')
-            if uri in paths:
-                logger.warning(
-                    f'Duplicate URI "{uri}" detected. Skipping.')
-                continue
-            paths[uri] = fpath
-    return paths
+    with open(fpath, 'r', encoding='utf-8') as f:
+        records = json.load(f)
+    channels = []
+    for record in records:
+        try:
+            channel = Channel(
+                record['uri'], Path(record['audio_path']),
+                int(record['channel']))
+        except Exception as e:
+            channel = None
+        if not channel:
+            logger.warning(
+                f'Malformed record in JSON script file. Skipping. '
+                f'SCRIPT FILE: {fpath}, RECORD: {record}')
+            continue
+        channels.append(channel)
+    return channels
 
 
 def parallel_wrapper(channel, args):
@@ -187,60 +186,77 @@ def parallel_wrapper(channel, args):
         segs = decode(
             x, sr, min_speech_dur=args.min_speech_dur,
             min_nonspeech_dur=args.min_nonspeech_dur,
-            min_chunk_dur=args.min_chunk_dur, max_chunk_dur=args.max_chunk_dur,
             speech_scale_factor=args.speech_scale_factor)
-        lab_path = Path(args.lab_dir, channel.uri + args.ext)
         rec_dur = len(x) / sr
-        write_htk_label_file(lab_path, segs, rec_dur=rec_dur, is_sorted=True)
+        kwargs = {'is_sorted' : True, 'precision' : 2}
+        if args.output_fmt == 'htk':
+            write_htk_label_file(
+                Path(args.output_dir, channel.uri + '.lab'),
+                segs, rec_dur=rec_dur, **kwargs)
+        elif args.output_fmt == 'audacity':
+            write_audacity_label_file(
+                Path(args.output_dir, channel.uri + '.txt'),
+                segs, rec_dur=rec_dur, **kwargs)
+        elif args.output_fmt == 'rttm':
+            write_rttm_file(
+                Path(args.output_dir, channel.uri + '.rttm'),
+                segs, file_id=channel.audio_path.stem,
+                channel=channel.channel, **kwargs)
+        elif args.output_fmt == 'textgrid':
+            write_textgrid_file(
+                Path(args.output_dir, channel.uri + '.TextGrid'),
+                segs, tier='sad', rec_dur=rec_dur, **kwargs)
     except Exception as e:
         msgs.append(f'SAD failed for "{channel.audio_path}". Skipping.')
     return msgs
 
 
-def main():
+def get_parser():
+    """Return `argparse.ArgumentParser`."""
+    audio_formats = ', '.join(sorted(sf.available_formats().values()))
     parser = argparse.ArgumentParser(
         description='Perform speech activity detection on audio files.',
-        add_help=True,
-        usage='%(prog)s [options] [afs]')
+        epilog=f'audio file formats: {audio_formats}',
+        add_help=True)
     parser.add_argument(
         'audio_path', metavar='audio-path', type=Path, nargs='*',
         help='audio files to be processed')
     parser.add_argument(
-        '-S', metavar='PATH', type=Path, dest='scp_path',
-        help='set script file (Default: %(default)s)')
-    parser.add_argument(
-        '-L', metavar='PATH', type=Path, dest='lab_dir', default=Path.cwd(),
-        help="set output label dir (Default: %(default)s)")
-    parser.add_argument(
-        '-X', nargs=None, default='.lab', metavar='STR', dest='ext',
-        help="set output label file extension (Default: %(default)s)")
-    parser.add_argument(
-        '-a', nargs=None, default=1., type=float, metavar='FLOAT',
-        dest='speech_scale_factor',
-        help='set speech scale factor. This factor post-multiplies the speech '
-             'model acoustic likelihoods. (Default: %(default)s)')
-    parser.add_argument(
-        '--speech', nargs=None, default=0.500, type=float, metavar='FLOAT',
-        dest='min_speech_dur',
-        help='set min speech dur in seconds (Default: %(default)s)')
-    parser.add_argument(
-        '--nonspeech', nargs=None, default=0.300, type=float, metavar='FLOAT',
-        dest='min_nonspeech_dur',
-        help='set min nonspeech duration in seconds (Default: %(default)s)')
-    parser.add_argument(
-        '--channel', nargs=None, default=1, type=int, metavar='INT',
+        '--channel', default=1, type=int, metavar='CHAN',
         dest='channel',
-        help='channel (1-indexed) to use (Default: %(default)s)')
-    parser.add_argument(
-        '--min-chunk-dur', metavar='MIN-CDUR', type=float, default=10,
-        help='minimum duration (seconds) of chunks in recursive splitting'
-             'procedure; used when HVite fails for full recording '
+        help='channel (1-indexed) to process on each audio file '
              '(Default: %(default)s)')
     parser.add_argument(
-        '--max-chunk-dur', metavar='MAX-CDUR', type=float, default=3600,
-        help='maximum duration (seconds) of chunks in recursive splitting '
-             'procedure; used when HVite fails for full recording '
+        '--scp', metavar='SCP', type=Path,
+        dest='scp_path',
+        help='path to script file (Default: %(default)s)')
+    parser.add_argument(
+        '--scp-fmt', metavar='SCP-FMT', dest='scp_fmt', default='htk',
+        choices=['htk', 'json'],
+        help='script file format (Default: %(default)s)')
+    parser.add_argument(
+        '--output-dir', metavar='OUTPUT-DIR', type=Path, dest='output_dir',
+        default=Path.cwd(),
+        help="output segmentations to OUTPUT-DIR (Default: current directory)")
+    parser.add_argument(
+        '--output-fmt', metavar='OUTPUT-FMT', default='htk',
+        choices=['audacity', 'htk', 'rttm', 'textgrid'],
+        help='output file format (Default: %(default)s)')
+    parser.add_argument(
+        '--speech', metavar='SPEECH-DUR', default=0.500, type=float,
+        dest='min_speech_dur',
+        help='filter speech segments shorter than SPEECH-DUR seconds '
              '(Default: %(default)s)')
+    parser.add_argument(
+        '--nonspeech', metavar='NONSPEECH-DUR', default=0.300, type=float,
+        dest='min_nonspeech_dur',
+        help='merge speech segments separated by less than NONSPEECH-DUR '
+             'seconds (Default: %(default)s)')
+    parser.add_argument(
+        '--speech-scale-factor', metavar='SPEECH-SCALE', default=1.,
+        type=float,
+        help='post-multiply speech model acoustic likelihoods by '
+             'SPEECH-SCALE (Default: %(default)s)')
     parser.add_argument(
         '--disable-progress', default=False, action='store_true',
         help='disable progress bar')
@@ -254,25 +270,47 @@ def main():
         '--version', action='version', version='%(prog)s ' + VERSION)
     if len(sys.argv) == 1:
         parser.print_help()
-        sys.exit(1)
+        parser.exit()
+    return parser
+
+
+def main():
+    parser = get_parser()
     args = parser.parse_args()
 
     # Set up logger.
     log_level = DEBUG if args.debug else WARNING
     setup_logger(logger, level=log_level)
+        
+    # Ensure HTK is installed.
+    if not which('HVite'):
+        # TODO: Update link when docs are online.
+        logger.error(
+            'HVite is not installed. Please install HTK and try again: '
+            '[INSERT LINK TO INSTRUCTIONS HERE]')
+        sys.exit(1)
 
-    # Load paths from script file.
-    if args.scp_path is not None:
-        audio_paths = read_script_file(args.scp_path)
-    elif args.audio_path:
-        audio_paths = {audio_path.stem : audio_path for audio_path in args.audio_path}
+    # Load and validate channels.
+    if args.scp_path:
+        if args.scp_fmt == 'htk':
+            channels = load_htk_script_file(
+                args.scp_path, channel=args.channel)
+        elif args.scp_fmt == 'json':
+            channels = load_json_script_file(args.scp_path)
+        else:
+            assert False
     else:
+        channels = []
+        for audio_path in args.audio_path:
+            channels.append(Channel(audio_path.stem, audio_path, args.channel))
+    channels = [channel for channel in channels if channel.validate(log=True)]
+    # TODO: Check for dupes.
+    if not channels:
         return
-    args.n_jobs = min(len(audio_paths), args.n_jobs)
+
 
     # Perform SAD on files in parallel.
-    channels = [Channel(uri, audio_path, args.channel)
-                for uri, audio_path in audio_paths.items()]
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     args.n_jobs = min(args.n_jobs, len(channels))
     if args.debug:
         logger.warning(

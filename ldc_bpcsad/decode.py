@@ -1,17 +1,18 @@
-# Copyright (c) 2012-2017, Trustees of the University of Pennsylvania
+# Copyright (c) 2012-2022, Trustees of the University of Pennsylvania
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Functions for segmenting recordings."""
 from pathlib import Path
 import shutil
 import tempfile
+from typing import List
 
 import soundfile as sf
 
 from .htk import hvite, write_hmmdefs, HTKError, HViteConfig
 from .io import load_htk_label_file
 from .logging import getLogger
-from .segment import merge_segs
+from .segment import Segment
 from .utils import resample
 
 __all__ = ['decode']
@@ -39,14 +40,18 @@ class DecodingError(Exception):
 
 
 def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
-    """Perform speech activity detection on a single channel of an audio file.
+    """Perform speech activity detection for chunk of an audio signal.
 
-    Decodes the chunk `x[bi:ei)`.
+    Decodes the chunk ``x[bi:ei)``.
 
     Parameters
     ----------
-    x : TODO
-    sr : TODO
+    x : numpy.ndarray (n_samples)
+        Audio samples.
+
+    sr : int
+        Sample rate (Hz).
+
     bi : int
         Index of first sample of chunk.
 
@@ -57,7 +62,7 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
         Minimum size of chunk in samples.
 
     hvite_config : HViteConfig
-        TODO
+        Decoder configuration.
     """
     # Convert from samples to seconds for more human-readable exceptions and
     # logging.
@@ -96,7 +101,7 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
             f'Decoding succeeded for chunk:    RECORDING_DUR: {rec_dur:.3f}, '
             f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
             f'CHUNK_OFFSET: {chunk_offset:.3f}')
-    except HTKError:
+    except HTKError as e:
         logger.debug(
             f'Decoding failed for chunk:       RECORDING_DUR: {rec_dur:.3f}, '
             f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
@@ -114,20 +119,17 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
 
 def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
            min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1):
-    """Perform speech activity detection on a single channel of an audio file.
+    """Perform speech activity detection an audio signal.
 
-    The resulting segmentation will be saved in an HTK label file in
-    ``lab_dir`` with the same name as ``audio_path`` but file extension ``ext``.
-
-    Because HTK's `HVite` command sometimes fails for longer recordings, we
+    Because HTK's ``HVite`` command sometimes fails for longer recordings, we
     first split `x` into chunks of at most `max_chunk_dur` seconds, segment
     each chunk separately, then merge the results. The individual chunks are
-    segmented using a recursive approach that calls `HVite` with progressively
+    segmented using a recursive approach that calls ``HVite`` with progressively
     smaller chunks until a minimum chunk duration (`min_chunk_dur`) is reached.
 
     Parameters
     ----------
-    x : ndarray (n_samples)
+    x : numpy.ndarray (n_samples)
         Audio samples.
 
     sr : int
@@ -159,7 +161,8 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
 
     Returns
     -------
-    segs : TODO
+    segs : List[Segment]
+        Detected speech segments.
 
     Raises
     ------
@@ -206,7 +209,7 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
         #   - merging speech segments separated by < min_nonspeech_dur seconds
         #   - filtering speech segments < min_speech_dur seconds
         min_nonspeech_dur = max(min_nonspeech_dur, 0.010)  # Gaps < 10 ms are artifacts.
-        segs = merge_segs(segs, thresh=min_nonspeech_dur, copy=False)
+        segs = Segment.merge_segs(segs, thresh=min_nonspeech_dur, copy=False)
         if segs:
             # Extend speech segments at beginning/end of recording if the
             # adjacent gaps are <= min_speech_dur seconds.

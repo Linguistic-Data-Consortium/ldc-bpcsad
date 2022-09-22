@@ -1,22 +1,26 @@
-# Copyright (c) 2012-2017, Trustees of the University of Pennsylvania
+# Copyright (c) 2012-2022, Trustees of the University of Pennsylvania
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Miscellaneous utility functions related to audio and segmentation."""
 import dataclasses
+import os
+from pathlib import Path
+from typing import Iterable
+
 import numpy as np
 import scipy.signal
 
-__all__ = ['add_dataclass_slots', 'clip', 'resample']
+__all__ = ['add_dataclass_slots', 'clip', 'resample', 'which']
 
 
 def resample(x, orig_sr, new_sr):
     """Resample audio from `orig_sr` to `new_sr` Hz.
 
-    Uses polyphase resampling as implemented within `scipy.signal`.
+    Uses polyphase resampling as implemented within :mod:`scipy.signal`.
 
     Parameters
     ----------
-    x : ndarray, (nsamples,)
+    x : numpy.ndarray, (n_samples,)
         Time series to be resampled.
 
     orig_sr : int
@@ -27,7 +31,7 @@ def resample(x, orig_sr, new_sr):
 
     Returns
     -------
-    x_resamp : ndarray, (nsamples * new_sr / orig_sr,)
+    x_resamp : numpy.ndarray, (n_samples * new_sr / orig_sr,)
         Version of `x` resampled from `orig_sr` Hz to `new_sr` Hz.
 
     See also
@@ -51,8 +55,8 @@ def clip(x, lb, ub):
 def add_dataclass_slots(cls):
     """Add `__slots__` to a data class.
 
-    References
-    ----------
+    Notes
+    -----
     https://github.com/ericvsmith/dataclasses/blob/master/dataclass_tools.py
     """
     # Need to create a new class, since we can't set __slots__
@@ -79,3 +83,34 @@ def add_dataclass_slots(cls):
     if qualname is not None:
         cls.__qualname__ = qualname
     return cls
+
+
+def which(program, search_dirs=None):
+    """Returns path to excutable `program`.
+
+    If `program` is not found on the user's PATH, returns ``None``.
+
+    Parameters
+    ----------
+    program : str
+        Name of program to search for.
+
+    search_dirs : Iterable[pathlib.Path], optional
+        List of additional directories to search. These directories will be
+        searched in order **BEFORE** the user's PATH.
+        (Default: None)
+    """
+    def is_exe(fpath):
+        return fpath.is_file() and os.access(fpath, os.X_OK)
+    program = Path(program)
+    if search_dirs is None:
+        search_dirs = []
+    search_dirs = list(search_dirs)
+    search_dirs += os.environ['PATH'].split(os.pathsep)
+    if is_exe(program):
+        return program
+    for dirpath in search_dirs:
+        fpath = Path(dirpath, program)
+        if is_exe(fpath):
+            return fpath
+    return None
