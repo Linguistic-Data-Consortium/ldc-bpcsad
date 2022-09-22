@@ -4,6 +4,7 @@
 """Labeled segments."""
 from dataclasses import dataclass
 import math
+from typing import Iterable, List
 
 from .utils import add_dataclass_slots, clip
 
@@ -73,7 +74,7 @@ class Segment:
         return Segment(onset=self.onset, offset=self.offset)
 
     def shift(self, delta, in_place=False):
-        """Shift segment by ``delta`` seconds."""
+        """Shift segment by `delta` seconds."""
         if not in_place:
             self = self.copy()
         self.onset += delta
@@ -81,7 +82,7 @@ class Segment:
         return self
 
     def clip(self, lb, ub, in_place=False):
-        """Clip segment so that its onset/offset lay within [``lb``, ``ub``].
+        """Clip segment so that its onset/offset lay within [`lb`, `ub`].
 
         Parameters
         ----------
@@ -123,7 +124,7 @@ class Segment:
             Segment to compare with.
 
         atol : float, optional
-            Times within ``abs_tol`` seconds are considered close.
+            Times within `atol` seconds are considered close.
             (Default: 1e-7)
         """
         return (math.isclose(self.onset, other.onset, abs_tol=atol) and
@@ -135,15 +136,15 @@ class Segment:
         tolerance.
 
         Two segments are considered equal if their onsets/offsets are within
-        ``atol`` of each other.
+        `atol` of each other.
 
         Parameters
         ----------
-        lsegs, rsegs : iterable of Segment
-            Input lists to compare.
+        lsegs, rsegs : Iterable[Segment]
+            Lists of segments to compare.
 
         atol : float, optional
-            Times within ``abs_tol`` seconds are considered close.
+            Times within `atol` seconds are considered close.
             (Default: 1e-7)
         """
         lsegs = list(lsegs)
@@ -166,7 +167,7 @@ class Segment:
 
         Parameters
         ----------
-        segs : list of Segment
+        segs : Iterable[Segment]
             Segments to be merged.
 
         thresh : float, optional
@@ -185,7 +186,7 @@ class Segment:
 
         Returns
         -------
-        list of Segment
+        List[Segment]
             Merged segments.
         """
         if not segs:

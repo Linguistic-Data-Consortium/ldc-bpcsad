@@ -2,6 +2,8 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Functions for reading/writing HTK label files."""
+from typing import Iterable, List
+
 from ..segment import Segment
 
 __all__ = ['load_htk_label_file', 'write_htk_label_file']
@@ -19,24 +21,33 @@ def load_htk_label_file(fpath, target_labels=None, ignored_labels=None,
 
     Parameters
     ----------
-    fpath : Path
+    fpath : pathlib.Path
         Path to file in HTK label file format.
 
-    target_labels : iterable of str, optional
+    target_labels : Iterable[str], optional
         Target labels. All segments in `fpath` with with one of these labels
         will be considered speech segments.
         (Default: None)
 
-    ignored_labels : iterable of str, optional
+    ignored_labels : Iterable[str], optional
         Labels to ignore. Output will be filtered so that segments with a label
         from this set will be skipped. If ``None``, then no filtering is
         performed.
         (Default: None)
 
     in_sec : bool, optional
-        If True, interpret onsets/offsets within ``fn`` as measuring seconds.
+        If True, interpret onsets/offsets within `fpath` as measuring seconds.
         Else, interpret as measuring HTK 100 ns units.
         (Default: True)
+
+    Returns
+    -------
+    List[Segment]
+        Speech segments.
+
+    References
+    ----------
+    .. [1] Young, S., Evermann, G., Gales, M., Hain, T., Kershaw, D., Liu, X., ... & Woodland, P. (2002). The HTK book. Cambridge University Engineering Department. `[link] <https://ai.stanford.edu/~amaas/data/htkbook.pdf>`_
     """
     if target_labels and ignored_labels:
         raise ValueError('At most one of "target_labels" and "ignored_labels" '
@@ -76,15 +87,15 @@ def write_htk_label_file(fpath, segs, rec_dur=None, is_sorted=False,
 
     Parameters
     ----------
-    fpath : Path
+    fpath : pathlib.Path
         Path to file in HTK label file format.
 
-    segs : list of Segment
+    segs : Iterable[Segment]
         Speech segments.
 
     rec_dur : float, optional
         Recording duration in seconds. Used to set boundary of final non-speech
-        segment. If None, set to `segs[-1].offset`.
+        segment. If None, set to ``segs[-1].offset``.
         (Default: None)
 
     is_sorted : bool, optional
@@ -100,7 +111,12 @@ def write_htk_label_file(fpath, segs, rec_dur=None, is_sorted=False,
     precision : int, optional
         Output will be truncated to `precision` decimal places.
         (Default: 2)
+
+    References
+    ----------
+    .. [1] Young, S., Evermann, G., Gales, M., Hain, T., Kershaw, D., Liu, X., ... & Woodland, P. (2002). The HTK book. Cambridge University Engineering Department. `[link] <https://ai.stanford.edu/~amaas/data/htkbook.pdf>`_
     """
+    segs = list(segs)
     max_offset = None
     if segs:
         max_offset = max(seg.offset for seg in segs)

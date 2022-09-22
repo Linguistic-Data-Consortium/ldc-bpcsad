@@ -2,6 +2,8 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Functions for reading/writing Audacity label files."""
+from typing import Iterable, List
+
 from .htk import load_htk_label_file, write_htk_label_file
 
 __all__ = ['load_audacity_label_file', 'write_audacity_label_file']
@@ -18,22 +20,27 @@ def load_audacity_label_file(fpath, target_labels=None, ignored_labels=None):
 
     Parameters
     ----------
-    fpath : Path
+    fpath : pathlib.Path
         Path to file in Audacity label file format.
 
-    target_labels : iterable of str, optional
+    target_labels : Iterable[str], optional
         Target labels. All segments in `fpath` with with one of these labels
         will be considered speech segments.
         (Default: None)
 
-    ignored_labels : iterable of str, optional
+    ignored_labels : Iterable[str], optional
         Labels to ignore. Output will be filtered so that segments with a label
         from this set will be skipped. If ``None``, then no filtering is
         performed.
         (Default: None)
 
-    References
-    ----------
+    Returns
+    -------
+    List[Segment]
+        Speech segments.
+
+    Notes
+    -----
     https://manual.audacityteam.org/man/importing_and_exporting_labels.html
     """
     return load_htk_label_file(
@@ -49,15 +56,15 @@ def write_audacity_label_file(fpath, segs, rec_dur=None, is_sorted=False,
 
     Parameters
     ----------
-    fpath : Path
+    fpath : pathlib.Path
         Path to file in Audacity label file format.
 
-    segs : list of Segment
+    segs : Iterable[Segment]
         Speech segments.
 
     rec_dur : float, optional
         Recording duration in seconds. Used to set boundary of final non-speech
-        segment. If None, set to `segs[-1].offset`.
+        segment. If None, set to ``segs[-1].offset``.
         (Default: None)
 
     is_sorted : bool, optional
@@ -69,8 +76,8 @@ def write_audacity_label_file(fpath, segs, rec_dur=None, is_sorted=False,
         Output will be truncated to `precision` decimal places.
         (Default: 2)
 
-    References
-    ----------
+    Notes
+    -----
     https://manual.audacityteam.org/man/importing_and_exporting_labels.html
     """
     write_htk_label_file(

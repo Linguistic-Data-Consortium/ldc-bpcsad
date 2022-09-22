@@ -5,6 +5,7 @@
 import dataclasses
 import os
 from pathlib import Path
+from typing import Iterable
 
 import numpy as np
 import scipy.signal
@@ -15,11 +16,11 @@ __all__ = ['add_dataclass_slots', 'clip', 'resample', 'which']
 def resample(x, orig_sr, new_sr):
     """Resample audio from `orig_sr` to `new_sr` Hz.
 
-    Uses polyphase resampling as implemented within `scipy.signal`.
+    Uses polyphase resampling as implemented within :mod:`scipy.signal`.
 
     Parameters
     ----------
-    x : ndarray, (nsamples,)
+    x : numpy.ndarray, (n_samples,)
         Time series to be resampled.
 
     orig_sr : int
@@ -30,7 +31,7 @@ def resample(x, orig_sr, new_sr):
 
     Returns
     -------
-    x_resamp : ndarray, (nsamples * new_sr / orig_sr,)
+    x_resamp : numpy.ndarray, (n_samples * new_sr / orig_sr,)
         Version of `x` resampled from `orig_sr` Hz to `new_sr` Hz.
 
     See also
@@ -54,8 +55,8 @@ def clip(x, lb, ub):
 def add_dataclass_slots(cls):
     """Add `__slots__` to a data class.
 
-    References
-    ----------
+    Notes
+    -----
     https://github.com/ericvsmith/dataclasses/blob/master/dataclass_tools.py
     """
     # Need to create a new class, since we can't set __slots__
@@ -87,14 +88,14 @@ def add_dataclass_slots(cls):
 def which(program, search_dirs=None):
     """Returns path to excutable `program`.
 
-    If `program` is not found on the user's PATH, returns `None`.
+    If `program` is not found on the user's PATH, returns ``None``.
 
     Parameters
     ----------
     program : str
         Name of program to search for.
 
-    search_dirs : iterable of Path, optional
+    search_dirs : Iterable[pathlib.Path], optional
         List of additional directories to search. These directories will be
         searched in order **BEFORE** the user's PATH.
         (Default: None)

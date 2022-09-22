@@ -5,6 +5,7 @@
 from pathlib import Path
 import shutil
 import tempfile
+from typing import List
 
 import soundfile as sf
 
@@ -39,13 +40,13 @@ class DecodingError(Exception):
 
 
 def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
-    """Perform speech activity detection on a single channel of an audio file.
+    """Perform speech activity detection for chunk of an audio signal.
 
-    Decodes the chunk `x[bi:ei)`.
+    Decodes the chunk ``x[bi:ei)``.
 
     Parameters
     ----------
-    x : ndarray (n_samples)
+    x : numpy.ndarray (n_samples)
         Audio samples.
 
     sr : int
@@ -118,20 +119,17 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
 
 def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
            min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1):
-    """Perform speech activity detection on a single channel of an audio file.
+    """Perform speech activity detection an audio signal.
 
-    The resulting segmentation will be saved in an HTK label file in
-    ``lab_dir`` with the same name as ``audio_path`` but file extension ``ext``.
-
-    Because HTK's `HVite` command sometimes fails for longer recordings, we
+    Because HTK's ``HVite`` command sometimes fails for longer recordings, we
     first split `x` into chunks of at most `max_chunk_dur` seconds, segment
     each chunk separately, then merge the results. The individual chunks are
-    segmented using a recursive approach that calls `HVite` with progressively
+    segmented using a recursive approach that calls ``HVite`` with progressively
     smaller chunks until a minimum chunk duration (`min_chunk_dur`) is reached.
 
     Parameters
     ----------
-    x : ndarray (n_samples)
+    x : numpy.ndarray (n_samples)
         Audio samples.
 
     sr : int
@@ -163,7 +161,7 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
 
     Returns
     -------
-    segs : list of Segment
+    segs : List[Segment]
         Detected speech segments.
 
     Raises

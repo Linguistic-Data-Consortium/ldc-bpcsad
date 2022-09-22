@@ -7,6 +7,7 @@ from math import log
 from pathlib import Path
 import subprocess
 from subprocess import CalledProcessError
+from typing import Iterable
 
 from .utils import which
 
@@ -19,24 +20,24 @@ class HViteConfig:
 
     Parameters
     ----------
-    slf_path : Path
+    slf_path : pathlib.Path
         Path to HTK SLF file defining the recognition network.
 
-    hmmdefs_path : Path
+    hmmdefs_path : pathlib.Path
         Path to HTK MMF file containing HMM definitions.
 
-    macros_path : Path
-        Path to HTK MMF file containing additional macro definitions (e.g., 
+    macros_path : pathlib.Path
+        Path to HTK MMF file containing additional macro definitions (e.g.,
         variance floors).
 
-    config_path : Path
-        Path to HTK configuration file defining expected source audio format and
-        feature extraction pipeline.
+    config_path : pathlib.Path
+        Path to HTK configuration file defining expected source audio format
+        and feature extraction pipeline.
 
-    dict_path : Path
+    dict_path : pathlib.Path
         Path to pronunciation dictionary.
 
-    monophones_path : Path
+    monophones_path : pathlib.Path
         Path to file listing HMMs to load from the MMF files.
     """
     slf_path: Path
@@ -48,7 +49,19 @@ class HViteConfig:
 
     @staticmethod
     def from_model_dir(model_dir):
-        """Return ``HViteConfig` for `model_dir`."""
+        """Construct :ref:`HViteConfig` from contents ofa model directory.
+
+        TODO
+
+        Parameters
+        ----------
+        model_dir : pathlib.Path
+            Model directory.
+
+        Returns
+        -------
+        HViteConfig
+        """
         model_dir = Path(model_dir)
         return HViteConfig(
             model_dir / 'phone_net',
@@ -64,23 +77,22 @@ class HTKError(Exception):
 
 
 def hvite(wav_path, config, working_dir):
-    """Perform Viterbi decoding for WAV file using network defined by
-    `htk_config`.
+    """Perform Viterbi decoding for WAV file.
 
     Parameters
     ----------
-    wav_path : Path
+    wav_path : pathlib.Path
         Path to WAV file to be decoded.
 
     config : HViteConfig
         Config file defining paths to files defining network.
 
-    working_dir : Path
+    working_dir : pathlib.Path
         Path to working directory for intermediate and output files.
 
     Returns
     -------
-    lab_path : Path
+    lab_path : pathlib.Path
         Path to output label file.
     """
     # Check that HVite exists.
@@ -120,7 +132,7 @@ def write_hmmdefs(old_hmmdefs_path, new_hmmdefs_path, speech_scale_factor=1,
 
     Parameters
     ----------
-    old_hmmdefs_path : Path
+    old_hmmdefs_path : pathlib.Path
         Path to original HTK `hmmdefs` file.
 
     new_hmmsdefs_path : str
@@ -132,7 +144,7 @@ def write_hmmdefs(old_hmmdefs_path, new_hmmdefs_path, speech_scale_factor=1,
         beam search.
         (Default: 1)
 
-    speech_phones : iterable of str, optional
+    speech_phones : Iterable[str], optional
         Names of speech phones. Only relevant when `speech_scale_factor != 1`.
         If None, `speech_scale_factor` has no effect.
         (Default: None)

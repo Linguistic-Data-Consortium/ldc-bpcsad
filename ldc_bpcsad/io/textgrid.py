@@ -2,6 +2,7 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Functions for reading/writing Praat TextGrids."""
+from typing import Iterable, List
 from collections import namedtuple
 
 from ..segment import Segment
@@ -21,26 +22,31 @@ def load_textgrid_file(fpath, tier=None, target_labels=None,
 
     Parameters
     ----------
-    fpath : Path
+    fpath : pathlib.Path
         Path to Praat TextGrid file.
 
-    tier : optional, None
+    tier : str, optional
         Name of IntervalTier to load segments from. If None, load **ALL** tiers.
         (Default: None)
 
-    target_labels : iterable of str, optional
+    target_labels : Iterable[str], optional
         Target labels. All segments with with one of these labels will be
         considered speech segments.
         (Default: None)
 
-    ignored_labels : iterable of str, optional
+    ignored_labels : Iterable[str], optional
         Labels to ignore. Output will be filtered so that segments with a label
         from this set will be skipped. If ``None``, then no filtering is
         performed.
         (Default: None)
 
-    References
-    ----------
+    Returns
+    -------
+    List[Segment]
+        Speech segments.
+
+    Notes
+    -----
     https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html
     """
     # TODO: Maybe implement this downstream if ever have a need. But not worth
@@ -56,10 +62,10 @@ def write_textgrid_file(fpath, segs, tier='sad', rec_dur=None,
 
     Parameters
     ----------
-    fpath : Path
+    fpath : pathlib.Path
         Path to output TextGrid file.
 
-    segs : list of Segment
+    segs : Iterable[Segment]
         Speech segments.
 
     tier : str, optional
@@ -80,8 +86,8 @@ def write_textgrid_file(fpath, segs, tier='sad', rec_dur=None,
         Output will be truncated to `precision` decimal places.
         (Default: 2)
 
-    References
-    ----------
+    Notes
+    -----
     https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html
     """
     # TODO: An awful lot of this code duplicates htk.write_htk_label_file.

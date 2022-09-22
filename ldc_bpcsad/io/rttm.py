@@ -2,6 +2,8 @@
 # Authors: nryant@ldc.upenn.edu (Neville Ryant)
 # License: BSD 2-clause
 """Functions for reading/writing RTTM files."""
+from typing import Iterable, List
+
 from ..segment import Segment
 
 __all__ = ['load_rttm_file', 'write_rttm_file']
@@ -15,12 +17,17 @@ def load_rttm_file(fpath):
 
     Parameters
     ----------
-    fpath : Path
+    fpath : pathlib.Path
         Path to file in RTTM file format.
+
+    Returns
+    -------
+    List[Segment]
+        Speech segments.
 
     References
     ----------
-    https://web.archive.org/web/20100606092041if_/http://www.itl.nist.gov/iad/mig/tests/rt/2009/docs/rt09-meeting-eval-plan-v2.pdf
+    .. [1] NIST. (2009). "The 2009 (RT-09) Rich Transcription Meeting Recognition Evaluation Plan." `[link] <https://web.archive.org/web/20100606092041if_/http://www.itl.nist.gov/iad/mig/tests/rt/2009/docs/rt09-meeting-eval-plan-v2.pdf>`_
     """
     with open(fpath, 'r', encoding='utf-8') as f:
         segs = []
@@ -38,10 +45,10 @@ def write_rttm_file(rttm_path, segs, file_id, channel=1, is_sorted=False,
 
     Parameters
     ----------
-    rttm_path : Path
+    rttm_path : pathlib.Path
         Path to file in RTTM format.
 
-    segs : list of Segment
+    segs : Iterable[Segment]
         Speech segments.
 
     file_id : str
@@ -63,7 +70,7 @@ def write_rttm_file(rttm_path, segs, file_id, channel=1, is_sorted=False,
 
     References
     ----------
-    https://web.archive.org/web/20100606092041if_/http://www.itl.nist.gov/iad/mig/tests/rt/2009/docs/rt09-meeting-eval-plan-v2.pdf
+    .. [1] NIST. (2009). "The 2009 (RT-09) Rich Transcription Meeting Recognition Evaluation Plan." `[link] <https://web.archive.org/web/20100606092041if_/http://www.itl.nist.gov/iad/mig/tests/rt/2009/docs/rt09-meeting-eval-plan-v2.pdf>`_
     """
     if not (isinstance(channel, int) and 1 <= channel):
         raise ValueError('Channel must be an integer >= 1.')
