@@ -22,6 +22,7 @@ setup(
                      'pytest-mock'],
         'doc' : ['Sphinx',
                  'sphinx-argparse',
+                 'sphinxcontrib-bibtex',
                  'sphinx_rtd_theme',
                  'ipython']
         },

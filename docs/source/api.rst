@@ -45,8 +45,6 @@ Functions wrapping HTK command line tools.
 
 .. currentmodule:: ldc_bpcsad
 
-.. NOTE: using this template for classes and functions seems to work just fine?
-
 .. autosummary::
    :toctree: generated/
    :template: function.rst

@@ -32,13 +32,14 @@ release = ldc_bpcsad.__version__
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'autodocsumm',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.bibtex',
     'sphinxarg.ext',
     'IPython.sphinxext.ipython_directive',
     'sphinx_rtd_theme']
+
 
 # Napoleon settings
 #napoleon_google_docstring = True
@@ -63,16 +64,26 @@ intersphinx_mapping = {
     'sf' : ('https://pysoundfile.readthedocs.io/en/latest', None),
 }
 
+
+# Bibtex.
+bibtex_bibfiles = ['refs.bib']
+bibtex_default_style = 'plain'
+
+
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
 
 # -- Options for HTML output -------------------------------------------------
 
