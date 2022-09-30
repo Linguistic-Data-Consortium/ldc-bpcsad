@@ -1,8 +1,9 @@
+*********
 SAD model
-=========
+*********
 
 Overview
---------
+========
 
 `ldc-bpcsad` performs speech activity detection (SAD) as a byproduct of broad phonetic class (BPC) recognition :cite:`halberstadt1997,scanlon2007,sainath2007,sainath2008`. The speech signal is run through a GMM-HMM based recognizer trained to recognize 5 broad phonetic classes: vowel, stops/affricate, fricative, nasal, and glide/liquid. Each contiguous sequence of BPCs is merged into a single speech segment and this segmentation smoothed to eliminate spurious short pauses. Input features are 13-D PLP features + first and second differences, extracted using a 20-channel filterbank covering 80 Hz to 4 kHz.
 
@@ -11,7 +12,7 @@ The system is implemented using `Hidden Markov Model Toolkit (HTK) <https://htk.
 
 
 Training
---------
+========
 
 The GMM and HMM transition parameters were trained using the phonetically transcribed portions of `Buckeye Corpus <https://buckeyecorpus.osu.edu/>`_ :cite:`buckeye` with the following mapping from the `Buckeye phoneset <https://buckeyecorpus.osu.edu/BuckeyeCorpusmanual.pdf>`_ to broad phonetic classes:
 
@@ -26,7 +27,7 @@ All other sounds were mapped to non-speech. This includes silence and environmen
 
 
 Performance
------------
+===========
 
 Below, we present SAD performance on the `DIHARD III <https://dihardchallenge.github.io/dihard3/>`_ :cite:`dihard3_eval_plan,dihard3_overview` eval set, both overall and by domain:
 
@@ -66,7 +67,7 @@ Full explanation of table columns:
 
 
 References
-----------
+==========
 
 .. bibliography::
   :filter: docname in docnames
