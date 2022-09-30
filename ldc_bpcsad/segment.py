@@ -33,8 +33,8 @@ class Segment:
 
         If the two segments overlap, the gap will have duration <= 0.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         other : Segment
             Other segment.
 
@@ -53,8 +53,8 @@ class Segment:
         The union of a set of segments is defined as the minimal segment
         containing each segment in the set.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         other : Segment
             Other segment.
 
