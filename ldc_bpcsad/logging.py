@@ -1,3 +1,6 @@
+# Copyright (c) 2012-2022, Trustees of the University of Pennsylvania
+# Authors: nryant@ldc.upenn.edu (Neville Ryant)
+# License: BSD 2-clause
 """Logging utilities."""
 import logging
 import sys
@@ -80,7 +83,7 @@ class CustomFormatter(logging.Formatter):
             WARN : expand_fmt('WARNING: %(message)s'),
             WARNING : expand_fmt('WARNING: %(message)s'),
             INFO : expand_fmt('%(message)s'),
-	    DEBUG : expand_fmt('%(message)s'),
+	    DEBUG : expand_fmt('DEBUG: %(message)s'),
             }
 
     def format(self, record):
