@@ -50,31 +50,6 @@ class Channel:
         self.channel = int(self.channel)
 
 
-    def validate(self, log=True):
-        """Return True if channel is valid."""
-        if not self.audio_path.exists():
-            if log:
-                logger.warning(
-                    f'Audio file does not exist. Skipping. '
-                    f'FILE: "{self.audio_path}", CHANNEL: {self.channel}')
-            return False
-        try:
-            info = sf.info(self.audio_path)
-        except Exception as e:
-            if log:
-                logger.warning(
-                    f'Problem reading audio file header. Skipping. '
-                    f'FILE: "{self.audio_path}", CHANNEL: {self.channel}')
-            return False
-        if not (1 <= self.channel <= info.channels):
-            if log:
-                logger.warning(
-                    f'Invalid channel. Skipping. '
-                    f'FILE: "{self.audio_path}", CHANNEL: {self.channel}')
-            return False
-        return True
-
-
 def load_htk_script_file(fpath, channel=1):
     """Read channels to process from HTK script file.
 
@@ -167,6 +142,13 @@ def load_json_script_file(fpath):
     return channels
 
 
+# Mapping from output formats to corresponding extensions.
+OUTPUT_EXTS = {'htk' : '.lab',
+               'audacity' : '.txt',
+               'rttm' : '.rttm',
+               'textgrid' : '.TextGrid'}
+
+
 def parallel_wrapper(channel, args):
     """Wrapper around `decode` for use with multiprocessing."""
     # Warning messages are collected and handled in calling process due to
@@ -177,8 +159,27 @@ def parallel_wrapper(channel, args):
     #     https://github.com/jruere/multiprocessing-logging
     #
     # TODO: Re-evaluate decision to use multiprocessing-logging.
-    msgs = []  # Warning messages to display to user.
     try:
+        logger.debug('#'*72)
+        logger.debug('Attempting SAD.')
+        logger.debug('#'*72)
+
+        # Sanity check on audio file before attempting SAD (e.g, file exists
+        # and in a supported format, channel is valid).
+        if not channel.audio_path.exists():
+            raise FileNotFoundError(
+		f'Audio file does not exist: {channel.audio_path}')
+        info = sf.info(channel.audio_path, verbose=True)
+        logger.debug(f'Source audio file: {info}')
+        logger.debug('')
+        logger.debug(f'Source channel: {channel.channel}.')
+        logger.debug('')
+        if not 1 <= channel.channel <= info.channels:
+            raise RuntimeError(
+                f'Invalid source channel: {channel.channel}. Source '
+                f'channel be positive integer <= {info.channels}.')
+
+        # Perform SAD.
         with open(channel.audio_path, 'rb') as f:
             x, sr = sf.read(f)
         if x.ndim > 1:
@@ -186,29 +187,50 @@ def parallel_wrapper(channel, args):
         segs = decode(
             x, sr, min_speech_dur=args.min_speech_dur,
             min_nonspeech_dur=args.min_nonspeech_dur,
-            speech_scale_factor=args.speech_scale_factor)
+            speech_scale_factor=args.speech_scale_factor,
+            silent=False)
+
+        # Write to output file.
         rec_dur = len(x) / sr
         kwargs = {'is_sorted' : True, 'precision' : 2}
+        ext = OUTPUT_EXTS[args.output_fmt]
+        output_path = Path(args.output_dir, channel.uri + ext)
+        logger.debug(f'Saving SAD to "{output_path}".')
+        logger.debug(f'Output file format: {args.output_fmt}.')
         if args.output_fmt == 'htk':
             write_htk_label_file(
-                Path(args.output_dir, channel.uri + '.lab'),
-                segs, rec_dur=rec_dur, **kwargs)
+                output_path, segs, rec_dur=rec_dur, **kwargs)
         elif args.output_fmt == 'audacity':
             write_audacity_label_file(
-                Path(args.output_dir, channel.uri + '.txt'),
-                segs, rec_dur=rec_dur, **kwargs)
+                output_path, segs, rec_dur=rec_dur, **kwargs)
         elif args.output_fmt == 'rttm':
             write_rttm_file(
-                Path(args.output_dir, channel.uri + '.rttm'),
-                segs, file_id=channel.audio_path.stem,
+                output_path, segs, file_id=channel.audio_path.stem,
                 channel=channel.channel, **kwargs)
         elif args.output_fmt == 'textgrid':
             write_textgrid_file(
-                Path(args.output_dir, channel.uri + '.TextGrid'),
-                segs, tier='sad', rec_dur=rec_dur, **kwargs)
+                output_path, segs, tier='sad', rec_dur=rec_dur, **kwargs)
+        return True
+    except FileNotFoundError as e:
+        logger.debug(e)
+    except RuntimeError as e:
+        msg = e.args[0]
+        if (msg.endswith('unknown format.') or
+            msg.endswith('unimplemented format.')):
+            # If unknown/unsupported file format, remind users what formats
+            # are supported.
+            logger.debug(e)
+            logger.debug('To see supported formats, run:')
+            logger.debug('')
+            logger.debug('    ldc-bpcsad --help')
+        elif msg.startswith('Invalid channel'):
+            logger.debug(e)
+        else:
+            logger.debug(e, exc_info=True)
     except Exception as e:
-        msgs.append(f'SAD failed for "{channel.audio_path}". Skipping.')
-    return msgs
+        logger.debug(e, exc_info=True)
+
+    return False
 
 
 def get_parser():
@@ -240,7 +262,7 @@ def get_parser():
         help="output segmentations to OUTPUT-DIR (Default: current directory)")
     parser.add_argument(
         '--output-fmt', metavar='OUTPUT-FMT', default='htk',
-        choices=['audacity', 'htk', 'rttm', 'textgrid'],
+        choices=sorted(OUTPUT_EXTS.keys()),
         help='output file format (Default: %(default)s)')
     parser.add_argument(
         '--speech', metavar='SPEECH-DUR', default=0.500, type=float,
@@ -281,7 +303,7 @@ def main():
     # Set up logger.
     log_level = DEBUG if args.debug else WARNING
     setup_logger(logger, level=log_level)
-        
+
     # Ensure HTK is installed.
     if not which('HVite'):
         # TODO: Update link when docs are online.
@@ -290,7 +312,7 @@ def main():
             '[INSERT LINK TO INSTRUCTIONS HERE]')
         sys.exit(1)
 
-    # Load and validate channels.
+    # Load channels.
     if args.scp_path:
         if args.scp_fmt == 'htk':
             channels = load_htk_script_file(
@@ -303,7 +325,6 @@ def main():
         channels = []
         for audio_path in args.audio_path:
             channels.append(Channel(audio_path.stem, audio_path, args.channel))
-    channels = [channel for channel in channels if channel.validate(log=True)]
     # TODO: Check for dupes.
     if not channels:
         return
@@ -312,18 +333,25 @@ def main():
     # Perform SAD on files in parallel.
     args.output_dir.mkdir(parents=True, exist_ok=True)
     args.n_jobs = min(args.n_jobs, len(channels))
+    logger.debug(f'COMMAND LINE CALL: {" ".join(sys.argv)}')
     if args.debug:
-        logger.warning(
+        logger.debug(
             'Flag "--n-jobs" is ignored for debug mode. Using single-threaded '
             'implementation.')
         args.n_jobs = 1
+        logger.debug('Progress bar is disabled for debug mode.')
+        logger.debug('')
+        args.disable_progress=True
     Pool = multiprocessing.Pool if args.n_jobs > 1 else multiprocessing.dummy.Pool
     with Pool(args.n_jobs) as pool:
         f = partial(parallel_wrapper, args=args)
         with tqdm(total=len(channels), disable=args.disable_progress) as pbar:
-            for msgs in pool.imap(f, channels):
-                for msg in msgs:
-                    logger.warning(msg)
+            for (res, channel) in zip(pool.imap(f, channels), channels):
+                if not res:
+                    logger.warning(
+                        f'SAD failed for channel {channel.channel} of '
+                        f'"{channel.audio_path}". Skipping. For more details '
+                        f'rerun with the --debug flag.')
                 pbar.update(1)
 
 

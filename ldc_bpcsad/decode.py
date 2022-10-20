@@ -9,7 +9,7 @@ from typing import List
 
 import soundfile as sf
 
-from .htk import hvite, write_hmmdefs, HTKError, HViteConfig
+from .htk import hvite, write_hmmdefs, HTKSegfault, HViteConfig
 from .io import load_htk_label_file
 from .logging import getLogger
 from .segment import Segment
@@ -39,7 +39,7 @@ class DecodingError(Exception):
     """Error segmenting file."""
 
 
-def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
+def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config, silent):
     """Perform speech activity detection for chunk of an audio signal.
 
     Decodes the chunk ``x[bi:ei)``.
@@ -63,11 +63,13 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
 
     hvite_config : HViteConfig
         Decoder configuration.
+
+    silent: bool, optional
+        If True, suppress all logging messages.
     """
     # Convert from samples to seconds for more human-readable exceptions and
     # logging.
     rec_len = len(x)
-    rec_dur = rec_len / sr
     chunk_len = ei - bi
     chunk_onset = bi / sr
     chunk_offset = ei / sr
@@ -79,17 +81,18 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
     if (chunk_len < rec_len and chunk_len < min_chunk_len):
         min_chunk_dur = min_chunk_len / sr
         raise DecodingError(
-            f'Minimum chunk duration reached: {chunk_dur} < {min_chunk_dur}')
+            f'Minimum chunk duration reached during recursion: '
+            f'{chunk_dur} < {min_chunk_dur}') from None
 
     # Actually attempt decoding via HVite.
     # TODO: Move recursion outside of try...except block.
     tmp_dir = Path(tempfile.mkdtemp())
     try:
         # Base case: HVite finishes successfully; return segments.
-        logger.debug(
-            f'Attempting decoding for chunk:   RECORDING_DUR: {rec_dur:.3f}, '
-            f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
-            f'CHUNK_OFFSET: {chunk_offset:.3f}')
+        if not silent:
+            logger.debug(
+                f'Decoding chunk: CHUNK_ONSET: {chunk_onset:.3f}, '
+                f'CHUNK_OFFSET: {chunk_offset:.3f}, CHUNK_DUR: {chunk_dur:.3f}')
         wav_path = tmp_dir / 'chunk.wav'
         sf.write(wav_path, x[bi:ei+1], sr, 'PCM_16')
         lab_path = hvite(
@@ -97,20 +100,17 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
         segs = load_htk_label_file(
             lab_path, target_labels=['speech'], in_sec=False)
         segs = [seg.shift(chunk_onset) for seg in segs]
-        logger.debug(
-            f'Decoding succeeded for chunk:    RECORDING_DUR: {rec_dur:.3f}, '
-            f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
-            f'CHUNK_OFFSET: {chunk_offset:.3f}')
-    except HTKError as e:
-        logger.debug(
-            f'Decoding failed for chunk:       RECORDING_DUR: {rec_dur:.3f}, '
-            f'CHUNK_DUR: {chunk_dur:.3f}, CHUNK_ONSET: {chunk_onset:.3f}, '
-            f'CHUNK_OFFSET: {chunk_offset:.3f}')
+    except HTKSegfault as e:
         # Recursive case: Retry HVite on two shorter chunks.
+        if not silent:
+            # TODO: Print traceback if we can limit the number of frames.
+            # Otherwise, becomes unreadable due to the recursion.
+            logger.debug(f'Decoding failed. {e}', exc_info=False)
         mid = (bi + ei) // 2
-        segs = _decode_chunk(x, sr, bi, mid, min_chunk_len, hvite_config)
+        segs = _decode_chunk(
+            x, sr, bi, mid, min_chunk_len, hvite_config, silent)
         segs.extend(
-            _decode_chunk(x, sr, mid, ei, min_chunk_len, hvite_config))
+            _decode_chunk(x, sr, mid, ei, min_chunk_len, hvite_config, silent))
     finally:
         shutil.rmtree(tmp_dir)
 
@@ -118,7 +118,8 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config):
 
 
 def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
-           min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1):
+           min_chunk_dur=10, max_chunk_dur=3600, speech_scale_factor=1,
+           silent=True):
     """Perform speech activity detection an audio signal.
 
     Because HTK's ``HVite`` command sometimes fails for longer recordings, we
@@ -158,6 +159,10 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
         beam search. Larger values will bias the SAD engine in favour of more
         speech segments.
         (Default: 1)
+
+    silent: bool, optional
+        If True, suppress all logging messages.
+        (Default: True)
 
     Returns
     -------
@@ -202,7 +207,8 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
         # Segment.
         segs = []
         for bi, ei in chunks:
-            segs_ = _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config)
+            segs_ = _decode_chunk(
+                x, sr, bi, ei, min_chunk_len, hvite_config, silent)
             segs.extend(segs_)
 
         # Smoothe segmentation by:
@@ -219,10 +225,7 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
             if (rec_dur - segs[-1].offset) <= min_nonspeech_dur:
                 segs[-1].offset = rec_dur
         segs = [seg for seg in segs if seg.duration >= min_speech_dur]
-    except DecodingError as e:
-        raise e
     finally:
         new_hmmdefs_path.unlink()
-
 
     return segs
