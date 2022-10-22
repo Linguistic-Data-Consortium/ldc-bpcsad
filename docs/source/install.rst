@@ -38,37 +38,61 @@ To install into the current virtual environment using `pip <https://pip.pypa.io/
     pip install .
 
 
+.. _htk_compile:
+
 Installing HTK
 ==============
 
-The SAD engine depends on `HTK <https://htk.eng.cam.ac.uk/>`_ for feature extraction and decoding. Unfortunately, the terms of the HTK license do not allow us to distribute either the compiled tools or source code with `ldc-bpcsad` and they must be installed independently.
-
-Download HTK
-------------
-
-- `register <https://htk.eng.cam.ac.uk/register.shtml>`_ a username/password
-- accept the the license agreement
-- download the `latest stable release <https://htk.eng.cam.ac.uk/ftp/software/HTK-3.4.1.tar.gz>`_
-- untar:
-
-  .. code-block:: console
-
-    tar -xvf HTK-3.4.1.tar.gz
+The SAD engine depends on `HTK <https://htk.eng.cam.ac.uk/>`_ for feature extraction and decoding. Unfortunately, the terms of the HTK license do not allow us to distribute either the compiled tools or source code, so some user intervention is required during the build process.
 
 
-.. _htk_compile:
+**Step 1: Download HTK**
 
-Compile	and install
--------------------
+- `Register <https://htk.eng.cam.ac.uk/register.shtml>`_ a username/password.
+- Accept the the license agreement.
+- Download the `latest stable release <https://htk.eng.cam.ac.uk/ftp/software/HTK-3.4.1.tar.gz>`_.
 
-After downloading and untarring HTK, compile and install:
+
+**Step 2: Compile HTK**
+
+Once you have sucessfully downloaded HTK, run the included installation script to build and install the command line tools:
 
     .. code-block:: console
 
-      cd htk
-      ./configure --without-x --disable-hslab --disable-hlmtools
-      make all -j 4
-      sudo make install
+      cd ldc-bpcsad/tools/
+      sudo ./install_htk.sh /path/to/HTK-3.4.1.tar.gz
+
+You will be prompted for your administrative password, following which the HTK command line tools will be compiled and installed to ``/usr/local/bin``. If the installation is successful, you will see the following printed in your terminal at the bottom of the logging output:
+
+    .. code-block:: console
+
+      ./install_htk.sh: Successfully installed HTK. To use, make sure the following directory is on your PATH:
+      ./install_htk.sh:
+      ./install_htk.sh:     /usr/local/bin
+
+If you wish to install the tools to a different location (e.g., because you do not have administrative privileges), specify the alternate location using the ``--prefix`` flag; e.g.:
+
+    .. code-block:: console
+
+      cd ldc-bpcsad/tools/
+      ./install_htk.sh --prefix /opt /path/to/HTK-3.4.1.tar.gz
+
+which would install the command line tools to ``/opt/bin``.
+
+    .. warning::
+
+      If you use ``--prefix`` to specify an alternate install location, make sure to add this directory to your `PATH <https://opensource.com/article/17/6/set-path-linux>`_. Assuming you installed to ``/opt/bin`` and are using `BASH <https://learn.microsoft.com/en-us/training/modules/bash-introduction/1-what-is-bash>`_ as your shell:
+
+          .. code-block:: console
+
+	    echo 'export PATH=/opt/bin:${PATH}' >> ~/.bashrc
+
+      If running `Z shell <https://opensource.com/article/19/9/getting-started-zsh>`_:
+
+          .. code-block:: console
+
+            echo 'export PATH=/opt/bin:${PATH}' >> ~/.zshrc
+
 
 
 
@@ -77,6 +101,10 @@ OS X specific instructions
 
 To compile HTK for OS X, first install `Xcode and the Xcode command line tools <https://guide.macports.org/#installing.xcode>`_. After installation of Xcode, open a terminal window and compile HTK using the :ref:`instructions above<htk_compile>`.
 
+    .. warning::
+
+      Currently, Macs using `Apple Silicon <https://support.apple.com/en-us/HT211814>`_ are **NOT** supported. This may change in the future, but as of now, HTK will only build on Macs running on X86 architecture. 
+      
 
 Windows specific intructions
 ----------------------------
