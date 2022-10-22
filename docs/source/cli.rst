@@ -10,7 +10,7 @@ Command-line tool
 Basic usage
 ===========
 
-The easiest way to perform speech activity detection (SAD) for a set of audio files is via the :ref:`ldc-bpcsad` command line tool. To perform SAD for channel 1 of each of a set of audio files ``rec1.flac``, ``rec2.flac``, ``rec3.flac``, ... and output their segmentation as HTK label files under the directory ``label_dir``:
+The easiest way to perform speech activity detection (SAD) for a set of audio files is via the :ref:`ldc-bpcsad<ldc-bpcsad>` command line tool. To perform SAD for channel 1 of each of a set of audio files ``rec1.flac``, ``rec2.flac``, ``rec3.flac``, ... and output their segmentation as HTK label files under the directory ``label_dir``:
 
   .. code-block:: console
 
@@ -42,7 +42,7 @@ It is also possible to specify the audio files and channels to be processed usin
 HTK script file
 ---------------
 
-If ``--scp-fmt htk`` is specified, :ref:`ldc-bpcsad` will load the audio files to be segmented from an `HTK <https://ai.stanford.edu/~amaas/data/htkbook.pdf>`_ script file. An HTK script file consists of a list of file paths, one path per line; e.g.:
+If ``--scp-fmt htk`` is specified, :ref:`ldc-bpcsad<ldc-bpcsad>` will load the audio files to be segmented from an `HTK <https://ai.stanford.edu/~amaas/data/htkbook.pdf>`_ script file. An HTK script file consists of a list of file paths, one path per line; e.g.:
 
   .. code-block:: none
 
@@ -68,7 +68,7 @@ is equivalent to:
 JSON script file
 ----------------
 
-If ``--scp-fmt json`` is specified, :ref:`ldc-bpcsad` will load the audio files **AND** channels to be segmented from a JSON file. The JSON file should consist of a sequence of JSON objects, each containing the following three key-value pairs:
+If ``--scp-fmt json`` is specified, :ref:`ldc-bpcsad<ldc-bpcsad>` will load the audio files **AND** channels to be segmented from a JSON file. The JSON file should consist of a sequence of JSON objects, each containing the following three key-value pairs:
 
 - ``audio_path``  --  Path to audio file to perform SAD on.
 - ``channel``  --  Channel number of audio file to perform SAD on (1-indexed).
@@ -231,7 +231,7 @@ E.g.:
 Postprocessing
 ==============
 
-By default :ref:`ldc-bpcsad` postprocesses it's output to eliminate speech segments less than 500 ms in duration and nonspeech segments less than 300 ms in duration. While these defaults are suitable for SAD that is being done as a precursor to transcription by human annotators, they may be overly restrictive for other uses. If necessary, the minimum speech and nonspeech segment durations may be changed via the ``--speech`` and ``--nonspeech`` flags. For instance, to instead use minimum durations of 250 ms for speech and 100 ms for nonspeech:
+By default :ref:`ldc-bpcsad<ldc-bpcsad>` postprocesses it's output to eliminate speech segments less than 500 ms in duration and nonspeech segments less than 300 ms in duration. While these defaults are suitable for SAD that is being done as a precursor to transcription by human annotators, they may be overly restrictive for other uses. If necessary, the minimum speech and nonspeech segment durations may be changed via the ``--speech`` and ``--nonspeech`` flags. For instance, to instead use minimum durations of 250 ms for speech and 100 ms for nonspeech:
 
   .. code-block:: console
 
@@ -281,6 +281,73 @@ and check the ``audio file formats`` list at the end of the help message.
 
 
 
+Debugging
+=========
+
+When :ref:`ldc-bpcsad<ldc-bpcsad>` has a problem segmenting a file (e.g., bad file path, unsupported format, HTK error), it will log to STDERR that a problem was encountered and skip the file:
+
+  .. code-block:: console
+
+    ldc-bpcsad --channel 1 --output-dir label_dir rec1.flac rec2.sph
+    SAD failed for channel 1 of "rec2.sph". Skipping. For more details rerun with the --debug flag.
+
+To troubleshoot precisely why a file was skipped, rerun with the ``-debug`` flag. This will enable debug mode, which produces **MUCH** more voluminous output including, among other items:
+
+- whether or not the audio file exists and is in an understood format
+- whether or not the selected channel exists on the audio file
+- basic properties of audio file (e.g., format, number of channels, duration)
+- any exceptions that arose during decoding
+
+E.g.:
+
+  .. code-block:: console
+
+    ldc-bpcsad --debug --channel 1 --output-dir label_dir rec1.flac rec2.sph
+    
+    SAD failed for channel 1 of "rec1.flac". Skipping. For more details rerun with the --debug flag.
+
+    DEBUG: COMMAND LINE CALL: /usr/local/bin/ldc-bpcsad --debug --channel 1 --output-dir label_dir rec1.flac rec2.sph
+    DEBUG: Flag "--n-jobs" is ignored for debug mode. Using single-threaded implementation.
+    DEBUG: Progress bar is disabled for debug mode.
+    DEBUG: 
+    DEBUG: ########################################################################
+    DEBUG: Attempting SAD.
+    DEBUG: ########################################################################
+    DEBUG: Source audio file: rec1.flac
+    samplerate: 16000 Hz
+    channels: 1
+    duration: 1e+01:4.000 min
+    format: FLAC (Free Lossless Audio Codec) [FLAC]
+    subtype: Signed 16 bit PCM [PCM_16]
+    endian: FILE
+    sections: 1
+    frames: 9664000
+    extra_info: """
+        File : rec1.flac
+	Length : 6680195
+	FLAC Stream Metadata
+	  Channels    : 1
+	  Sample rate : 16000
+	  Frames      : 9664000
+	  Bit width   : 16
+	  Vorbis Comment Metadata
+	    comment      : Processed by SoX
+	  End
+	  """
+    DEBUG: 
+    DEBUG: Source channel: 1.
+    DEBUG: 
+    DEBUG: Decoding chunk: CHUNK_ONSET: 0.000, CHUNK_OFFSET: 604.000, CHUNK_DUR: 604.000
+    DEBUG: Saving SAD to "label_dir/rec1.lab".
+    DEBUG: Output file format: htk.
+    DEBUG: ########################################################################
+    DEBUG: Attempting SAD.
+    DEBUG: ########################################################################
+    DEBUG: Error opening 'rec2.sph': File contains data in an unimplemented format.
+    DEBUG: To see supported formats, run:
+    DEBUG: 
+    DEBUG:     ldc-bpcsad --help
+    WARNING: SAD failed for channel 1 of "rec2.sph". Skipping. For more details rerun with the --debug flag.
 
 
 .. _ldc-bpcsad:

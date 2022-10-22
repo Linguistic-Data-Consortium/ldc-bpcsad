@@ -11,7 +11,7 @@ from typing import Iterable
 
 from .utils import which
 
-__all__ = ['HTKError', 'HViteConfig', 'hvite', 'write_hmmdefs']
+__all__ = ['HTKError', 'HTKSegfault', 'HViteConfig', 'hvite', 'write_hmmdefs']
 
 
 @dataclass
@@ -76,6 +76,10 @@ class HTKError(Exception):
     """Call to HTK command line tool failed."""
 
 
+class HTKSegfault(HTKError):
+    """Call to HTK command line tool resulted in segmentation fault.."""
+
+
 def hvite(wav_path, config, working_dir):
     """Perform Viterbi decoding for WAV file.
 
@@ -98,9 +102,9 @@ def hvite(wav_path, config, working_dir):
     # Check that HVite exists.
     # TODO: Update link when docs are online.
     if not which('HVite'):
-        raise HTKError(
+        raise FileNotFoundError(
             f'HVite is not installed. Please install HTK and try again: '
-            f'[INSERT LINK TO INSTRUCTIONS HERE]')
+            f'[INSERT LINK TO INSTRUCTIONS HERE]') from None
 
     # Run HVite.
     wav_path = Path(wav_path)
@@ -119,9 +123,15 @@ def hvite(wav_path, config, working_dir):
            wav_path,
           ]
     try:
-        subprocess.run(cmd, check=True)
-    except CalledProcessError:
-        raise HTKError
+        subprocess.run(cmd, capture_output=True, text=True, check=True)
+    except CalledProcessError as e:
+        if e.returncode == -11:
+            raise HTKSegfault('HVite call caused segfault.') from None
+        elif e.stderr:
+            raise HTKError(f'HVite failed with following error: \n{e.stderr}') from None
+        else:
+            raise e
+
     return wav_path.with_suffix('.lab')
 
 

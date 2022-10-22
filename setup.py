@@ -10,6 +10,8 @@ setup(
     #Package.
     packages=find_packages(exclude=['tests', '__pycache__']),
     entry_points={'console_scripts' : ['ldc-bpcsad=ldc_bpcsad.cli:main',],},
+    package_data={'ldc_bpcsad' : ['model/*']},
+    include_package_date=True,
     # Requirements.
     python_requires='>=3.7',
     install_requires=[
