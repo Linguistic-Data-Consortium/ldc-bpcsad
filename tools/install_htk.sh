@@ -6,7 +6,7 @@ set -e
 # Avoid issues with availability of realpath on OS X and POSIX compliance of
 # readlink. Admittedly heavyweight, but Python is already a requirement, so call it a day.
 function get_abspath () {
-    python -c "from pathlib import Path; print(Path('${1}').resolve())"
+    python3 -c "from pathlib import Path; print(Path('${1}').resolve())"
     return 0
 }
 
