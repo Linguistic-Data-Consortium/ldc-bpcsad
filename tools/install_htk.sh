@@ -63,6 +63,7 @@ if [ $# != 1 ]; then
     exit 1;
 fi
 htk_tar=$1
+prefix=$(get_abspath ${prefix})
 
 
 #######################
@@ -98,7 +99,6 @@ if [ $stage -le 2 ]; then
     fi
 
     echo "$0: Configuring HTK for your system..."
-    prefix=$(get_abspath ${prefix})
     ./configure --prefix $prefix --without-x --disable-hslab --disable-hlmtools
     echo "$0:"
     echo "$0:"
