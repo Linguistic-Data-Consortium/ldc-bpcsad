@@ -6,7 +6,7 @@ set -e
 # Avoid issues with availability of realpath on OS X and POSIX compliance of
 # readlink. Admittedly heavyweight, but Python is already a requirement, so call it a day.
 function get_abspath () {
-    python -c "from pathlib import Path; print(Path('${1}').resolve())"
+    python3 -c "from pathlib import Path; print(Path('${1}').resolve())"
     return 0
 }
 
@@ -63,6 +63,7 @@ if [ $# != 1 ]; then
     exit 1;
 fi
 htk_tar=$1
+prefix=$(get_abspath ${prefix})
 
 
 #######################
@@ -98,7 +99,6 @@ if [ $stage -le 2 ]; then
     fi
 
     echo "$0: Configuring HTK for your system..."
-    prefix=$(get_abspath ${prefix})
     ./configure --prefix $prefix --without-x --disable-hslab --disable-hlmtools
     echo "$0:"
     echo "$0:"

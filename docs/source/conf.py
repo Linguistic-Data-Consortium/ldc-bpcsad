@@ -38,6 +38,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
+    'sphinx_tabs.tabs',
     'sphinxarg.ext',
     'IPython.sphinxext.ipython_directive',
     'sphinx_rtd_theme']

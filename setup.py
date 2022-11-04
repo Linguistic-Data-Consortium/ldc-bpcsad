@@ -8,16 +8,17 @@ import versioneer
 
 setup(
     #Package.
-    packages=find_packages(exclude=['tests', '__pycache__']),
+    package_dir = {'' : 'src'},
+    packages=find_packages(where='src', exclude=['tests', '__pycache__']),
     entry_points={'console_scripts' : ['ldc-bpcsad=ldc_bpcsad.cli:main',],},
     package_data={'ldc_bpcsad' : ['model/*']},
-    include_package_date=True,
+    include_package_data=True,
     # Requirements.
     python_requires='>=3.7',
     install_requires=[
         'numpy>=1.16.5',
         'scipy>=1.7.0',
-        'soundfile>=0.10.3',
+        'soundfile>=0.11.0',
         'tqdm>=4.38.0'],
     extras_require={
         'testing' : ['pytest',
@@ -25,6 +26,7 @@ setup(
         'doc' : ['Sphinx',
                  'sphinx-argparse',
                  'sphinxcontrib-bibtex',
+                 'sphinx-tabs',
                  'sphinx_rtd_theme',
                  'ipython']
         },
