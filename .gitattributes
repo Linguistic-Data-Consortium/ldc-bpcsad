@@ -1,1 +1,2 @@
 ldc_bpcsad/_version.py export-subst
+src/ldc_bpcsad/_version.py export-subst
