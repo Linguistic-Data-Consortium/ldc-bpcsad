@@ -48,7 +48,7 @@ Below, we present SAD performance on the `DIHARD III <https://dihardchallenge.gi
     webvideo                  76.73        90.49     76.21  82.74  31.80  23.31      21.85        23.79
     OVERALL                   88.52        96.02     89.18  92.48  14.51  11.61      13.98        10.82
 
-For domains containing generally clean recording conditions, high SNR, and low degree of speaker overlap, performance is good with DER generally <10%. In the presence of substantial overlapped speech, low SNR, or challenging environmental conditions, performance degrades. This is particularly noticeable for YouTube recordings (``webvideo`` domain) and speech recorded in restaurants (``restaurant``). In the latter environment, DER rises to nearly 50%. Across all domains, performance is worse than `state-of-the-art <https://github.com/dihardchallenge/dihard3_baseline#sad-scoring>`_ for this test set with deltas ranging from 1.88% DER (broadcast_interview) to 31.56% (restaurant).
+For domains containing generally clean recording conditions, high SNR, and low degree of speaker overlap, performance is good with DER generally <10%. In the presence of substantial overlapped speech, low SNR, or challenging environmental conditions, performance degrades. This is particularly noticeable for YouTube recordings (``webvideo`` domain) and speech recorded in restaurants (``restaurant``). In the latter environment, DER rises to nearly 50%. Across all domains, performance is worse than `state-of-the-art <https://github.com/dihardchallenge/dihard3_baseline#sad-scoring>`_ for this test set with deltas ranging from 1.88% DER (broadcast interview) to 31.56% (restaurant).
 
 
 Full explanation of table columns:
