@@ -7,7 +7,7 @@
 LDC Broad Phonetic Class Speech Activity Detector
 #################################################
 
-`ldc-bpcsad` is a speech activity detector (SAD) developed at `Linguistic Data Consortium (LDC) <https://www.ldc.upenn.edu/>`_ based on `recognition of broad phonetic classes <model.html>`_.It can be accessed through either the `ldc-bpcsad command line tool <cli.html>`_ or directly through an `API <api.html>`_.
+`ldc-bpcsad` is a speech activity detector (SAD) developed at `Linguistic Data Consortium (LDC) <https://www.ldc.upenn.edu/>`_ based on `recognition of broad phonetic classes <model.html>`_. It can be accessed through either the `ldc-bpcsad command line tool <cli.html>`_ or directly through an `API <api.html>`_.
 
 
 
@@ -27,7 +27,7 @@ If you use `ldc-bpcsad` in your research, please use the following citation:
 
   @misc{ldc-bpcsad,
     author = {Neville Ryant},
-    title = {Linguistic Data Consortium Broad Phonetic Class Speech Activity Detector (ldc-bpcsad)},
+    title = {{L}inguistic {D}ata {C}onsortium {B}road {P}honetic {C}lass {S}peech {A}ctivity {D}etector (ldc-bpcsad)},
     year = {2012},
     url = {https://github.com/Linguistic-Data-Consortium/ldc-bpcsad},
   }
@@ -43,11 +43,3 @@ User guide
    model
    cli
    api
-   
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
