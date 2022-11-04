@@ -26,6 +26,7 @@ setup(
         'doc' : ['Sphinx',
                  'sphinx-argparse',
                  'sphinxcontrib-bibtex',
+                 'sphinx-tabs',
                  'sphinx_rtd_theme',
                  'ipython']
         },
