@@ -18,7 +18,7 @@ setup(
     install_requires=[
         'numpy>=1.16.5',
         'scipy>=1.7.0',
-        'soundfile>=0.10.3',
+        'soundfile>=0.11.0',
         'tqdm>=4.38.0'],
     extras_require={
         'testing' : ['pytest',
