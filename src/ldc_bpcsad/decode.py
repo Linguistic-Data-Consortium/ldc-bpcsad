@@ -182,7 +182,8 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
             SPEECH_PHONES)
         hvite_config.hmmdefs_path = new_hmmdefs_path
 
-        # Resample x to 16 kHz for feature extraction.
+        # Resample to 16 kHz for feature extraction.
+        rec_dur = len(x) / sr  # Determine duration PRIOR to resampling.
         if sr != 16000:
             x = resample(x, sr, 16000)
             sr = 16000
@@ -221,9 +222,11 @@ def decode(x, sr, min_speech_dur=0.500, min_nonspeech_dur=0.300,
             # adjacent gaps are <= min_speech_dur seconds.
             if segs[0].onset <= min_nonspeech_dur:
                 segs[0].onset = 0
-            rec_dur = len(x) / sr
             if (rec_dur - segs[-1].offset) <= min_nonspeech_dur:
                 segs[-1].offset = rec_dur
+
+            # Ensure last segment does not extend past edge of recording.
+            segs[-1].offset = min(segs[-1].offset, rec_dur)
         segs = [seg for seg in segs if seg.duration >= min_speech_dur]
     finally:
         new_hmmdefs_path.unlink()
