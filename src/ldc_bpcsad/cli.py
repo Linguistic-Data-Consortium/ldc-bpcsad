@@ -211,12 +211,16 @@ def parallel_wrapper(channel, args):
             write_textgrid_file(
                 output_path, segs, tier='sad', rec_dur=rec_dur, **kwargs)
         return True
+    except sf.LibsndfileError as e:
+        # Usually an unrecognized format. Skip and log.
+        logger.debug(e)
     except FileNotFoundError as e:
         logger.debug(e)
     except RuntimeError as e:
-        msg = e.args[0]
+        msg = str(e)
         if (msg.endswith('unknown format.') or
-            msg.endswith('unimplemented format.')):
+            msg.endswith('unimplemented format.') or
+            msg.endswith('Format not recognised.')):
             # If unknown/unsupported file format, remind users what formats
             # are supported.
             logger.debug(e)
