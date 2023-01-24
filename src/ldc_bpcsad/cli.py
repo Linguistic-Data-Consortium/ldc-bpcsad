@@ -178,6 +178,8 @@ def parallel_wrapper(channel, args):
             raise RuntimeError(
                 f'Invalid source channel: {channel.channel}. Source '
                 f'channel be positive integer <= {info.channels}.')
+        if info.frames == 0:
+            raise RuntimeError('Empty audio file.')
 
         # Perform SAD.
         with open(channel.audio_path, 'rb') as f:
