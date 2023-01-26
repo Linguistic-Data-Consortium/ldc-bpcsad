@@ -44,9 +44,9 @@ class Channel:
 
     Parameters
     ----------
-    uri : str
-        Uniform resource identifier (URI) of channel. Used to name output file
-        containing SAD output.
+    id : str
+        Unique identifier of channel. Used to name output file containing SAD
+        output.
 
     audio_path : Path
         Path to audio file channel is on.
@@ -59,7 +59,7 @@ class Channel:
     format : str
         Audio format (derived from extension).
     """
-    uri: str
+    id: str
     audio_path: Path
     channel: int
 
@@ -153,8 +153,8 @@ def load_htk_script_file(fpath, channel=1):
     with open(fpath, 'r', encoding='utf-8') as f:
         for line in f:
             audio_path = Path(line.strip())
-            uri = audio_path.stem
-            chan = Channel(uri, audio_path, channel)
+            channel_id = audio_path.stem
+            chan = Channel(channel_id, audio_path, channel)
             channels.append(chan)
     return channels
 
@@ -165,8 +165,8 @@ def load_json_script_file(fpath):
     The JSON file should consist of a sequence of JSON objects, each containing
     the following three key-value pairs:
 
-    - ``uri``  --  Uniform resource identifier (URI) of channel. Used to name
-      output file containing SAD output.
+    - ``channel_id``  --  Unique identifier of channel. Used to name output
+      file containing SAD output.
     - ``audio_path``  --  Path to audio file that the channel is on.
     - ``channel``  --  Channel number of audio file to process (1-indexed).
 
@@ -174,15 +174,15 @@ def load_json_script_file(fpath):
 
         ```json
         [{
-            "uri": "rec1_c1",
+            "channel_id": "rec1_c1",
             "audio_path": "/path/to/rec1.flac",
             "channel": 1
         }, {
-            "uri": "rec1_c2",
+            "channel_id": "rec1_c2",
             "audio_path": "/path/to/rec1.flac",
             "channel": 2
         }, {
-            "uri": "rec2_c1",
+            "channel_id": "rec2_c1",
             "audio_path": "/path/to/rec2.flac",
             "channel": 1
         }]
@@ -204,7 +204,7 @@ def load_json_script_file(fpath):
     for record in records:
         try:
             channel = Channel(
-                record['uri'], Path(record['audio_path']),
+                record['channel_id'], Path(record['audio_path']),
                 int(record['channel']))
         except Exception as e:
             channel = None
@@ -266,7 +266,7 @@ def _process_one_file(channel, args):
         rec_dur = len(x) / sr
         kwargs = {'is_sorted' : True, 'precision' : 2}
         ext = OUTPUT_EXTS[args.output_fmt]
-        output_path = Path(args.output_dir, channel.uri + ext)
+        output_path = Path(args.output_dir, channel.id + ext)
         logger.debug(f'Saving SAD to "{output_path}".')
         logger.debug(f'Output file format: {args.output_fmt}')
         if args.output_fmt == 'htk':

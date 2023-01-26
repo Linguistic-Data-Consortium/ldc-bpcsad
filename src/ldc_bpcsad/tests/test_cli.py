@@ -75,18 +75,19 @@ class TestLoadJSONScriptFile:
     def test_valid(self, tmpdir):
         # Properly formed script file.
         expected = [Channel('good_c1', GOOD_FLAC_PATH, 1)]
-        json_txt = (f'[{{"uri": "good_c1", "audio_path": "{GOOD_FLAC_PATH}", '
+        json_txt = (f'[{{"channel_id": "good_c1", '
+                    f'"audio_path": "{GOOD_FLAC_PATH}", '
                     f'"channel": 1}}]')
         scp_path = Path(tmpdir, 'valid.scp')
         scp_path.write_text(json_txt)
         actual = load_json_script_file(scp_path)
         assert actual == expected
 
-    def test_missing_uri(self, tmpdir, caplog):
+    def test_missing_channel_id(self, tmpdir, caplog):
         # Missing channel URI.
         expected = []
         json_txt = f'[{{"audio_path": "{GOOD_FLAC_PATH}", "channel": 1}}]'
-        scp_path = Path(tmpdir, 'missing_uri.scp')
+        scp_path = Path(tmpdir, 'missing_chanid.scp')
         scp_path.write_text(json_txt)
         actual = load_json_script_file(scp_path)
         assert actual == expected
@@ -95,7 +96,7 @@ class TestLoadJSONScriptFile:
     def test_missing_audio_path(self, tmpdir, caplog):
         # Missing audio path.
         expected = []
-        json_txt = '[{"uri": "good_c1", "channel": 1}]'
+        json_txt = '[{"channel_id": "good_c1", "channel": 1}]'
         scp_path = Path(tmpdir, 'missing_apath.scp')
         scp_path.write_text(json_txt)
         actual = load_json_script_file(scp_path)
@@ -105,7 +106,8 @@ class TestLoadJSONScriptFile:
     def test_missing_channel(self, tmpdir, caplog):
         # Missing audio path.
         expected = []
-        json_txt = f'[{{"uri": "good_c1", "audio_path": "{GOOD_FLAC_PATH}"}}]'
+        json_txt = (f'[{{"channel_id": "good_c1", '
+                    f'"audio_path": "{GOOD_FLAC_PATH}"}}]')
         scp_path = Path(tmpdir, 'missing_chan.scp')
         scp_path.write_text(json_txt)
         actual = load_json_script_file(scp_path)

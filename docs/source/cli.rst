@@ -72,23 +72,23 @@ If ``--scp-fmt json`` is specified, :ref:`ldc-bpcsad<ldc-bpcsad>` will load the 
 
 - ``audio_path``  --  Path to audio file to perform SAD on.
 - ``channel``  --  Channel number of audio file to perform SAD on (1-indexed).
-- ``uri``  --  Basename for output file containing SAD result.
+- ``channel_id``  --  Basename for output file containing SAD result.
 
 E.g.:
 
   .. code-block:: json
 
     [{
-        "uri": "rec1_c1",
         "audio_path": "/path/to/rec1.flac",
+        "channel_id": "rec1_c1",
         "channel": 1
     }, {
-        "uri": "rec1_c2",
         "audio_path": "/path/to/rec1.flac",
+        "channel_id": "rec1_c2",
         "channel": 2
     }, {
-        "uri": "rec2_c1",
         "audio_path": "/path/to/rec2.flac",
+        "channel_id": "rec2_c1",
         "channel": 1
     }]
 
