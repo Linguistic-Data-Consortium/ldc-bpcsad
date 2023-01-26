@@ -5,6 +5,7 @@
 from typing import Iterable, List
 from collections import namedtuple
 
+from .base import check_segs
 from ..segment import Segment
 
 __all__ = ['load_textgrid_file', 'write_textgrid_file']
@@ -90,25 +91,7 @@ def write_textgrid_file(fpath, segs, tier='sad', rec_dur=None,
     -----
     https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html
     """
-    # TODO: An awful lot of this code duplicates htk.write_htk_label_file.
-    # Consider refactoring.
-    max_offset = None
-    if segs:
-        max_offset = max(seg.offset for seg in segs)
-
-    # Validation to ensure we can output a valid segmentation.
-    if not segs and rec_dur is None:
-        raise ValueError('if "segs" is empty, "rec_dur" must be set')
-    if rec_dur:
-        if not rec_dur > 0:
-            raise ValueError('"rec_dur" must be positive')
-        if segs and rec_dur < max_offset:
-            raise ValueError('segments cannot extend past "rec_dur"')
-
-
-    # Determine length of recording.
-    if rec_dur is None:
-        rec_dur = max_offset
+    segs, rec_dur = check_segs(segs, rec_dur)
 
     # Write speech/nonspeech segmentation.
     def _f2s(x, precision):

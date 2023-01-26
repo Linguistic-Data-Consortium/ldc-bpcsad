@@ -46,7 +46,7 @@ def hvite_fail_gt40(wav_path, config, working_dir):
     """
     rec_dur = sf.info(wav_path).duration
     if rec_dur > 40:
-        raise ldc_bpcsad.htk.HTKError
+        raise ldc_bpcsad.htk.HTKSegfault
     return ldc_bpcsad.htk.hvite(wav_path, config, working_dir)
 
 
@@ -59,7 +59,8 @@ class TestDecodeChunk():
         min_chunk_dur = 10
         min_chunk_len = int(min_chunk_dur*SR)
         segs = ldc_bpcsad.decode._decode_chunk(
-            x_nospeech, SR, 0, x_nospeech.size, min_chunk_len, hvite_config)
+            x_nospeech, SR, 0, x_nospeech.size, min_chunk_len, hvite_config,
+            True)
 
         # Check that no recursion occurred.
         assert spy.call_count == 1
@@ -76,7 +77,8 @@ class TestDecodeChunk():
         min_chunk_dur = 10
         min_chunk_len = int(min_chunk_dur*SR)
         segs = ldc_bpcsad.decode._decode_chunk(
-            x_nospeech, SR, 0, x_nospeech.size, min_chunk_len, hvite_config)
+            x_nospeech, SR, 0, x_nospeech.size, min_chunk_len, hvite_config,
+            True)
 
         # Check that recursion actually occurred.
         assert spy.call_count == 7
