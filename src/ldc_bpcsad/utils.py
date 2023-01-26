@@ -6,11 +6,13 @@ import dataclasses
 import os
 from pathlib import Path
 from typing import Iterable
+import wave
 
 import numpy as np
 import scipy.signal
 
-__all__ = ['add_dataclass_slots', 'clip', 'resample', 'which']
+__all__ = ['add_dataclass_slots', 'clip', 'get_nframes_wav', 'resample',
+           'which']
 
 
 def resample(x, orig_sr, new_sr):
@@ -114,3 +116,9 @@ def which(program, search_dirs=None):
         if is_exe(fpath):
             return fpath
     return None
+
+
+def get_nframes_wav(fpath):
+    """Return number of frames in WAV file."""
+    with wave.open(str(fpath), 'r') as f:
+        return f.getnframes()

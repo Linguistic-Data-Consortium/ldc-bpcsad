@@ -22,7 +22,8 @@ from ldc_bpcsad.decode import decode
 from ldc_bpcsad.io import (write_audacity_label_file, write_htk_label_file,
                            write_rttm_file, write_textgrid_file)
 from ldc_bpcsad.logging import getLogger, setup_logger, DEBUG, WARNING
-from ldc_bpcsad.utils import which
+from ldc_bpcsad.utils import get_nframes_wav, which
+
 
 logger = getLogger()
 
@@ -81,7 +82,7 @@ class Channel:
         n_bytes = self.audio_path.lstat().st_size
         if n_bytes == 0:
             raise FileEmptyError('File contains no data.')
-        
+
         # Check in a known audio format.
         if not self.format in sf._formats:
             raise SoundFileError(f'Unknown format "{self.format}"')
@@ -99,6 +100,21 @@ class Channel:
             # soundfile.info seems to encounter an underflow errors for some
             # formats when file is empty.
             raise FileEmptyError('File contains no data.')
+
+        # Check that # frames indicated in header agrees with actual # frames.
+        # Currently only implemented for WAV.
+        if self.format == 'WAV':
+            try:
+                n_frames_header = get_nframes_wav(self.audio_path)
+                n_frames_actual = info.frames
+                if n_frames_header != n_frames_actual:
+                    logger.warning(
+                        f'Header frame count wrong for file '
+                        f'"{self.audio_path}": '
+                        f'{n_frames_header} != {n_frames_actual}')
+            except Exception as e:
+                # Bare except, yes, yes. yada, yada, yada/
+                pass
 
         # Check that channel EXISTS on file.
         if not 1 <= self.channel <= info.channels:
@@ -215,22 +231,17 @@ class CompletedProcess:
     Parameters
     ----------
     channel : Channel
-        Channel SAD was attempte don.
+        Channel SAD was attempted on.
 
     success : bool
         Did processing succeed for the channel.
-
-    warnings : list of str, optional
-        Warnings generated during SAD. Will be logged by main process.
     """
     channel : Channel
     success : bool
-    warnings : List[str]
 
 
-def parallel_wrapper(channel, args):
-    """Wrapper around `decode` for use with multiprocessing."""
-    warnings = []
+def _process_one_file(channel, args):
+    """Process one file."""
     success = False
     try:
         logger.debug('#'*72)
@@ -250,14 +261,14 @@ def parallel_wrapper(channel, args):
             min_nonspeech_dur=args.min_nonspeech_dur,
             speech_scale_factor=args.speech_scale_factor,
             silent=False)
-
+        
         # Write to output file.
         rec_dur = len(x) / sr
         kwargs = {'is_sorted' : True, 'precision' : 2}
         ext = OUTPUT_EXTS[args.output_fmt]
         output_path = Path(args.output_dir, channel.uri + ext)
         logger.debug(f'Saving SAD to "{output_path}".')
-        logger.debug(f'Output file format: {args.output_fmt}.')
+        logger.debug(f'Output file format: {args.output_fmt}')
         if args.output_fmt == 'htk':
             write_htk_label_file(
                 output_path, segs, rec_dur=rec_dur, **kwargs)
@@ -274,7 +285,7 @@ def parallel_wrapper(channel, args):
 
         success = True
     except LibsndfileError as e:
-        logger.debug(e)
+        logger.debug(e, exc_info=True)
         msg = str(e)
         if (msg.endswith('unknown format.') or
             msg.endswith('unimplemented format.') or
@@ -287,7 +298,17 @@ def parallel_wrapper(channel, args):
     except Exception as e:
         logger.debug(e, exc_info=True)
 
-    return CompletedProcess(channel, success, warnings)
+    return CompletedProcess(channel, success)
+
+
+def process_one_file(channel, args):
+    """Process one file."""
+    p = _process_one_file(channel, args)
+    if not p.success:
+        logger.warning(
+            f'SAD failed for channel {p.channel.channel} of '
+            f'"{p.channel.audio_path}". Skipping. For more details rerun with '
+            f'the --debug flag.')
 
 
 def get_parser():
@@ -400,16 +421,9 @@ def main():
         args.disable_progress=True
     Pool = multiprocessing.Pool if args.n_jobs > 1 else multiprocessing.dummy.Pool
     with Pool(args.n_jobs) as pool:
-        f = partial(parallel_wrapper, args=args)
+        f = partial(process_one_file, args=args)
         with tqdm(total=len(channels), disable=args.disable_progress) as pbar:
             for res in pool.imap(f, channels):
-                for msg in res.warnings:
-                    logger.warning(msg)
-                if not res.success:
-                    logger.warning(
-                        f'SAD failed for channel {res.channel.channel} of '
-                        f'"{res.channel.audio_path}". Skipping. For more details '
-                        f'rerun with the --debug flag.')
                 pbar.update(1)
 
 
