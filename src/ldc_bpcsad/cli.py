@@ -11,8 +11,10 @@ import multiprocessing
 import multiprocessing.dummy
 from pathlib import Path
 import sys
+from typing import List
 
 import soundfile as sf
+from soundfile import LibsndfileError, SoundFileError
 from tqdm import tqdm
 
 from ldc_bpcsad import __version__ as VERSION
@@ -23,6 +25,16 @@ from ldc_bpcsad.logging import getLogger, setup_logger, DEBUG, WARNING
 from ldc_bpcsad.utils import which
 
 logger = getLogger()
+
+
+class ChannelNotFoundError(Exception):
+    """Raised when a channel doesn't exist."""
+    pass
+
+
+class FileEmptyError(Exception):
+    """Raised when a file contains no data."""
+    pass
 
 
 @dataclass
@@ -40,6 +52,11 @@ class Channel:
 
     channel : int
         Channel number on audio file (1-indexed).
+
+    Attributes
+    ----------
+    format : str
+        Audio format (derived from extension).
     """
     uri: str
     audio_path: Path
@@ -48,6 +65,48 @@ class Channel:
     def __post_init__(self):
         self.audio_path = Path(self.audio_path)
         self.channel = int(self.channel)
+        self.format = self.audio_path.suffix.lstrip('.').upper()
+
+    def validate(self):
+        """Check that channel is valid.
+
+        If all checks pass, return the channel. Otherwise, raises an exception.
+        """
+        # Check that file exists.
+        if not self.audio_path.exists():
+            raise FileNotFoundError(
+                f'Audio file does not exist: {self.audio_path}')
+
+        # Check that file is not empty.
+        n_bytes = self.audio_path.lstat().st_size
+        if n_bytes == 0:
+            raise FileEmptyError('File contains no data.')
+        
+        # Check in a known audio format.
+        if not self.format in sf._formats:
+            raise SoundFileError(f'Unknown format "{self.format}"')
+
+        # Check that soundfile can, in actuality, read it  --  the header is a
+        # lie, etc.
+        info = sf.info(self.audio_path, verbose=True)
+        logger.debug(f'Source audio file: {info}')
+        logger.debug('')
+        logger.debug(f'Source channel: {self.channel}.')
+        logger.debug('')
+
+        # Check that file does not consists of JUST a header.
+        if info.frames == 0 or info.frames == 9223372036854775807:
+            # soundfile.info seems to encounter an underflow errors for some
+            # formats when file is empty.
+            raise FileEmptyError('File contains no data.')
+
+        # Check that channel EXISTS on file.
+        if not 1 <= self.channel <= info.channels:
+            raise ChannelNotFoundError(
+                f'Invalid source channel: {self.channel}. Source '
+                f'channel be positive integer <= {info.channels}.')
+
+        return self
 
 
 def load_htk_script_file(fpath, channel=1):
@@ -148,38 +207,38 @@ OUTPUT_EXTS = {'htk' : '.lab',
                'rttm' : '.rttm',
                'textgrid' : '.TextGrid'}
 
+@dataclass
+class CompletedProcess:
+    """Return value from `parallel_wrapper`, representing a process that has
+    completed.
+
+    Parameters
+    ----------
+    channel : Channel
+        Channel SAD was attempte don.
+
+    success : bool
+        Did processing succeed for the channel.
+
+    warnings : list of str, optional
+        Warnings generated during SAD. Will be logged by main process.
+    """
+    channel : Channel
+    success : bool
+    warnings : List[str]
+
 
 def parallel_wrapper(channel, args):
     """Wrapper around `decode` for use with multiprocessing."""
-    # Warning messages are collected and handled in calling process due to
-    # potential ugly interactions with multiprocessing and tqdm. This can be
-    # avoided at cost of an additional dependency by using the
-    # multiprocessing-logging package:
-    #
-    #     https://github.com/jruere/multiprocessing-logging
-    #
-    # TODO: Re-evaluate decision to use multiprocessing-logging.
+    warnings = []
+    success = False
     try:
         logger.debug('#'*72)
         logger.debug('Attempting SAD.')
         logger.debug('#'*72)
 
-        # Sanity check on audio file before attempting SAD (e.g, file exists
-        # and in a supported format, channel is valid).
-        if not channel.audio_path.exists():
-            raise FileNotFoundError(
-		f'Audio file does not exist: {channel.audio_path}')
-        info = sf.info(channel.audio_path, verbose=True)
-        logger.debug(f'Source audio file: {info}')
-        logger.debug('')
-        logger.debug(f'Source channel: {channel.channel}.')
-        logger.debug('')
-        if not 1 <= channel.channel <= info.channels:
-            raise RuntimeError(
-                f'Invalid source channel: {channel.channel}. Source '
-                f'channel be positive integer <= {info.channels}.')
-        if info.frames == 0:
-            raise RuntimeError('Empty audio file.')
+        # Basic validation of channel.
+        channel.validate()
 
         # Perform SAD.
         with open(channel.audio_path, 'rb') as f:
@@ -212,31 +271,23 @@ def parallel_wrapper(channel, args):
         elif args.output_fmt == 'textgrid':
             write_textgrid_file(
                 output_path, segs, tier='sad', rec_dur=rec_dur, **kwargs)
-        return True
-    except sf.LibsndfileError as e:
-        # Usually an unrecognized format. Skip and log.
+
+        success = True
+    except LibsndfileError as e:
         logger.debug(e)
-    except FileNotFoundError as e:
-        logger.debug(e)
-    except RuntimeError as e:
         msg = str(e)
         if (msg.endswith('unknown format.') or
             msg.endswith('unimplemented format.') or
             msg.endswith('Format not recognised.')):
             # If unknown/unsupported file format, remind users what formats
             # are supported.
-            logger.debug(e)
             logger.debug('To see supported formats, run:')
             logger.debug('')
             logger.debug('    ldc-bpcsad --help')
-        elif msg.startswith('Invalid channel'):
-            logger.debug(e)
-        else:
-            logger.debug(e, exc_info=True)
     except Exception as e:
         logger.debug(e, exc_info=True)
 
-    return False
+    return CompletedProcess(channel, success, warnings)
 
 
 def get_parser():
@@ -335,7 +386,6 @@ def main():
     if not channels:
         return
 
-
     # Perform SAD on files in parallel.
     args.output_dir.mkdir(parents=True, exist_ok=True)
     args.n_jobs = min(args.n_jobs, len(channels))
@@ -352,11 +402,13 @@ def main():
     with Pool(args.n_jobs) as pool:
         f = partial(parallel_wrapper, args=args)
         with tqdm(total=len(channels), disable=args.disable_progress) as pbar:
-            for (res, channel) in zip(pool.imap(f, channels), channels):
-                if not res:
+            for res in pool.imap(f, channels):
+                for msg in res.warnings:
+                    logger.warning(msg)
+                if not res.success:
                     logger.warning(
-                        f'SAD failed for channel {channel.channel} of '
-                        f'"{channel.audio_path}". Skipping. For more details '
+                        f'SAD failed for channel {res.channel.channel} of '
+                        f'"{res.channel.audio_path}". Skipping. For more details '
                         f'rerun with the --debug flag.')
                 pbar.update(1)
 
