@@ -1,3 +1,5 @@
+# Copyright (c) 2023, Trustees of the University of Pennsylvania
+# See LICENSE for licensing conditions
 """Common functions for IO."""
 import math
 

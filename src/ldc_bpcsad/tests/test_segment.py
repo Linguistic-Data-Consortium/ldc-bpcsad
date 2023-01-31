@@ -1,6 +1,5 @@
-# Copyright (c) 2012-2022, Trustees of the University of Pennsylvania
-# Authors: nryant@ldc.upenn.edu (Neville Ryant)
-# License: GNU General Public License v3.0
+# Copyright (c) 2023, Trustees of the University of Pennsylvania
+# See LICENSE for licensing conditions
 """Tests for `Segment`."""
 import pytest
 
@@ -131,7 +130,7 @@ class TestSegment:
 
     def test_merge_segs(self, segs):
         merge_segs = Segment.merge_segs
-        
+
         # Test adjacent segments.
         expected_segs = [Segment(1, 5)]
         premerge_segs = [

@@ -17,6 +17,12 @@ Documentation
 The documentation is available at: [http://Linguistic-Data-Consortium.github.io/ldc-bpcsad](http://Linguistic-Data-Consortium.github.io/ldc-bpcsad).
 
 
+License
+=======
+
+This software is distributed under [version 3 of the GNU General Public license](LICENSE).
+
+
 Citation
 ========
 
