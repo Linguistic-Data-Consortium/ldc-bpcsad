@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# Copyright (c) 2012-2022, Trustees of the University of Pennsylvania
-# Authors: nryant@ldc.upenn.edu (Neville Ryant)
-# License: GNU General Public License v3.0
+# Copyright (c) 2023, Trustees of the University of Pennsylvania
+# See LICENSE for licensing conditions
 """Perform speech activity detection (SAD) using a GMM-HMM broad phonetic class recognizer."""
 import argparse
 from dataclasses import dataclass

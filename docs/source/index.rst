@@ -16,7 +16,12 @@ Installation
 
 To install `ldc-bpcsad` and its dependencies, please follow the detailed instructions in the `installation guide <install.html>`_.
 
-  
+
+License
+=======
+
+This software is distributed under :download:`version 3 of the GNU General Public license <../../LICENSE>`.
+
 
 Citation
 ========
