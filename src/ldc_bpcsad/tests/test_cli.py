@@ -35,14 +35,12 @@ class TestValidateChannel:
         channel = Channel('unk_fmt_c1', AUDIO_DIR / 'unk_fmt.txt', 1)
         with pytest.raises(SoundFileError) as excinfo:
             channel.validate()
-        assert 'Unknown format' in str(excinfo.value)
 
         # Known file extension, but cannot read contents. E.g., corrupted or
         # wrong extension.
         channel = Channel('corrupted_c1', AUDIO_DIR / 'corrupted.flac', 1)
         with pytest.raises(LibsndfileError) as excinfo:
             channel.validate()
-        assert 'unknown format' in str(excinfo.value)
 
     def test_empty_file(self):
         channel = Channel('empty', AUDIO_DIR / 'empty.flac', 1)

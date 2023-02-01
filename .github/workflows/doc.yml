@@ -19,6 +19,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        apt-get update -yqq && apt-get install -yqq --no-install-recommends libsndfile1
         pip install ."[doc]"
     - name: Build documentation
       run: |
