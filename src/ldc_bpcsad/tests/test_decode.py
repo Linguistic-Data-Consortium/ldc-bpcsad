@@ -39,6 +39,7 @@ def x_nospeech(scale=0.01):
     return x
 
 
+@pytest.mark.requires_htk
 def hvite_fail_gt40(wav_path, config, working_dir):
     """Version of `hvite` that fails on recordings > 40 seconds duration.
 
