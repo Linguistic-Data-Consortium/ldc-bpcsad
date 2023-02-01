@@ -22,11 +22,12 @@ setup(
     extras_require={
         'testing' : ['pytest',
                      'pytest-mock'],
-        'doc' : ['Sphinx',
+        'doc' : ['docutils==0.18.0',
+                 'Sphinx==5.3.0',
                  'sphinx-argparse',
                  'sphinxcontrib-bibtex',
-                 'sphinx-tabs',
-                 'sphinx_rtd_theme',
+                 'sphinx-tabs==3.4.1',
+                 'sphinx_rtd_theme==1.2.0rc3',
                  'ipython']
         },
     # Versioning.
