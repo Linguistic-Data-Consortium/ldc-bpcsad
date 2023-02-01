@@ -56,6 +56,7 @@ def load_textgrid_file(fpath, tier=None, target_labels=None,
 
 PraatInterval = namedtuple('PraatInterval', ['onset', 'offset', 'label'])
 
+
 def write_textgrid_file(fpath, segs, tier='sad', rec_dur=None,
                         is_sorted=False, precision=2):
     """Write speech segments to Praat TextGrid file.

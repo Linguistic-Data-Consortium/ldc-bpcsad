@@ -28,12 +28,13 @@ NOSPEECH_DUR = 100
 # Sample rate (Hz) of audio.
 SR = 16000
 
+
 @pytest.fixture
 def x_nospeech(scale=0.01):
     """Sample `dur` second long signal containing **NO SPEECH**.."""
     np.random.seed(SEED)
-    n_samples = int(NOSPEECH_DUR*SR)
-    x = 2*scale*np.random.rand(n_samples) - scale
+    n_samples = int(NOSPEECH_DUR * SR)
+    x = (2 * scale * np.random.rand(n_samples)) - scale
     x = np.clip(x, -1, 1)
     return x
 
@@ -56,7 +57,7 @@ class TestDecodeChunk():
         # recording of silence.
         spy = mocker.spy(ldc_bpcsad.decode, 'hvite')
         min_chunk_dur = 10
-        min_chunk_len = int(min_chunk_dur*SR)
+        min_chunk_len = int(min_chunk_dur * SR)
         segs = ldc_bpcsad.decode._decode_chunk(
             x_nospeech, SR, 0, x_nospeech.size, min_chunk_len, hvite_config,
             True)
@@ -74,7 +75,7 @@ class TestDecodeChunk():
         monkeypatch.setattr(ldc_bpcsad.decode, 'hvite', hvite_fail_gt40)
         spy = mocker.spy(ldc_bpcsad.decode, 'hvite')
         min_chunk_dur = 10
-        min_chunk_len = int(min_chunk_dur*SR)
+        min_chunk_len = int(min_chunk_dur * SR)
         segs = ldc_bpcsad.decode._decode_chunk(
             x_nospeech, SR, 0, x_nospeech.size, min_chunk_len, hvite_config,
             True)
@@ -93,7 +94,6 @@ class TestDecode:
             x_nospeech, SR, min_chunk_dur=10, max_chunk_dur=1000)
         assert len(segs) == 0
         assert spy.call_count == 1
-
 
     def test_chunking(self, x_nospeech, mocker):
         spy = mocker.spy(ldc_bpcsad.decode, '_decode_chunk')

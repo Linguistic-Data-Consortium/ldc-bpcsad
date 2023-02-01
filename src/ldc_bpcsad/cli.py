@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 # Copyright (c) 2023, Trustees of the University of Pennsylvania
 # See LICENSE for licensing conditions
-"""Perform speech activity detection (SAD) using a GMM-HMM broad phonetic class recognizer."""
+"""Perform speech activity detection.
+
+Speech acticity detection (SAD) is performed using a broad phonetic class
+recognizer.
+"""
 import argparse
 from dataclasses import dataclass
 from functools import partial
@@ -83,7 +87,7 @@ class Channel:
             raise FileEmptyError('File contains no data.')
 
         # Check in a known audio format.
-        if not self.format in sf._formats:
+        if self.format not in sf._formats:
             raise SoundFileError(f'Unknown format "{self.format}"')
 
         # Check that soundfile can, in actuality, read it  --  the header is a
@@ -217,10 +221,11 @@ def load_json_script_file(fpath):
 
 
 # Mapping from output formats to corresponding extensions.
-OUTPUT_EXTS = {'htk' : '.lab',
-               'audacity' : '.txt',
-               'rttm' : '.rttm',
-               'textgrid' : '.TextGrid'}
+OUTPUT_EXTS = {'htk': '.lab',
+               'audacity': '.txt',
+               'rttm': '.rttm',
+               'textgrid': '.TextGrid'}
+
 
 @dataclass
 class CompletedProcess:
@@ -235,17 +240,17 @@ class CompletedProcess:
     success : bool
         Did processing succeed for the channel.
     """
-    channel : Channel
-    success : bool
+    channel: Channel
+    success: bool
 
 
 def _process_one_file(channel, args):
     """Process one file."""
     success = False
     try:
-        logger.debug('#'*72)
+        logger.debug('#' * 72)
         logger.debug('Attempting SAD.')
-        logger.debug('#'*72)
+        logger.debug('#' * 72)
 
         # Basic validation of channel.
         channel.validate()
@@ -254,7 +259,7 @@ def _process_one_file(channel, args):
         with open(channel.audio_path, 'rb') as f:
             x, sr = sf.read(f)
         if x.ndim > 1:
-            x = x[:, channel.channel-1]
+            x = x[:, channel.channel - 1]
         segs = decode(
             x, sr, min_speech_dur=args.min_speech_dur,
             min_nonspeech_dur=args.min_nonspeech_dur,
@@ -263,7 +268,7 @@ def _process_one_file(channel, args):
         
         # Write to output file.
         rec_dur = len(x) / sr
-        kwargs = {'is_sorted' : True, 'precision' : 2}
+        kwargs = {'is_sorted': True, 'precision': 2}
         ext = OUTPUT_EXTS[args.output_fmt]
         output_path = Path(args.output_dir, channel.id + ext)
         logger.debug(f'Saving SAD to "{output_path}".')
@@ -417,8 +422,10 @@ def main():
         args.n_jobs = 1
         logger.debug('Progress bar is disabled for debug mode.')
         logger.debug('')
-        args.disable_progress=True
-    Pool = multiprocessing.Pool if args.n_jobs > 1 else multiprocessing.dummy.Pool
+        args.disable_progress = True
+    Pool = multiprocessing.Pool
+    if args.n_jobs == 1:
+        Pool = multiprocessing.dummy.Pool
     with Pool(args.n_jobs) as pool:
         f = partial(process_one_file, args=args)
         with tqdm(total=len(channels), disable=args.disable_progress) as pbar:

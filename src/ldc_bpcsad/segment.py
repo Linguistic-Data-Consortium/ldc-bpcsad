@@ -64,7 +64,7 @@ class Segment:
         """
         segs = [self]
         segs.extend(other)
-        onset =	min(s.onset for s in segs)
+        onset = min(s.onset for s in segs)
         offset = max(s.offset for s in segs)
         return Segment(onset, offset)
 

@@ -10,7 +10,7 @@ __all__ = ['load_htk_label_file', 'write_htk_label_file']
 
 
 def load_htk_label_file(fpath, target_labels=None, ignored_labels=None,
-        in_sec=True):
+                        in_sec=True):
     """Load speech segments from HTK label file.
 
     If both `target_labels` and `ignore_labels` are unset, then all segments in
@@ -129,8 +129,8 @@ def write_htk_label_file(fpath, segs, rec_dur=None, is_sorted=False,
             onset = _f2s(onset, precision)
             offset = _f2s(offset, precision)
         else:
-            onset = int(onset*1e7)
-            offset = int(offset*1e7)
+            onset = int(onset * 1e7)
+            offset = int(offset * 1e7)
         f.write(f'{onset}\t{offset}\t{label}\n')
     if not is_sorted:
         segs = sorted(segs)

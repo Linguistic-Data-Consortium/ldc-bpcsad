@@ -106,7 +106,7 @@ def test_write_htk_label_file(speech_segs, tmpdir):
                 '25000000 30000000 non-speech\n'
                 '30000000 35000000 speech\n'
                 '35000000 50000000 non-speech\n')
-    expected = expected.replace(' ',  '\t')
+    expected = expected.replace(' ', '\t')
     actual_path_htk = Path(tmpdir, 'actual_data_htk.lab')
     write_htk_label_file(actual_path_htk, speech_segs, rec_dur=5.0, in_sec=False)
     actual = actual_path_htk.read_text()
@@ -116,8 +116,8 @@ def test_write_htk_label_file(speech_segs, tmpdir):
     expected = ('0.0 2.0 non-speech\n'
                 '2.0 2.5 speech\n'
                 '2.5 3.0 non-speech\n'
-		'3.0 3.5 speech\n')
-    expected = expected.replace(' ',  '\t')
+                '3.0 3.5 speech\n')
+    expected = expected.replace(' ', '\t')
     actual_path = Path(tmpdir, 'no_recdur_sec.lab')
     write_htk_label_file(actual_path, speech_segs, precision=1)
     actual = actual_path.read_text()

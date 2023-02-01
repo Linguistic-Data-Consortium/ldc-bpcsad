@@ -79,8 +79,8 @@ def test_write_audacity_label_file(speech_segs, tmpdir):
     expected = ('0.0 2.0 non-speech\n'
                 '2.0 2.5 speech\n'
                 '2.5 3.0 non-speech\n'
-		'3.0 3.5 speech\n')
-    expected = expected.replace(' ',  '\t')
+                '3.0 3.5 speech\n')
+    expected = expected.replace(' ', '\t')
     actual_path = Path(tmpdir, 'no_recdur_sec.lab')
     write_audacity_label_file(actual_path, speech_segs, precision=1)
     actual = actual_path.read_text()
