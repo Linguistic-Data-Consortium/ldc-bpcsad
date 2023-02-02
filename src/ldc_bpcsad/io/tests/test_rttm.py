@@ -10,6 +10,7 @@ from ldc_bpcsad.segment import Segment
 
 allclose = Segment.allclose
 
+
 @pytest.fixture
 def rttm_path(tmpdir):
     data = ('SPEAKER rec1.flac 1 1.05 2.45 <NA> <NA> speaker <NA> <NA>\n'

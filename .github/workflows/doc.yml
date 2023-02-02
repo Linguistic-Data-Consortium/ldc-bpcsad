@@ -5,7 +5,7 @@ on:
       - master
 
 jobs:
-  build-and-deploy:
+  build-docs:
     if: github.repository_owner == 'linguistic-data-consortium'
     runs-on: ubuntu-22.04
     strategy:
@@ -25,7 +25,7 @@ jobs:
       run: |
         sudo apt-get update -yqq
         sudo apt-get install -yqq --no-install-recommends libsndfile1
-    - name: Install required Python packages
+    - name: Install from source
       run:  pip install ."[doc]"
     - name: Build documentation
       run: make --directory=docs html

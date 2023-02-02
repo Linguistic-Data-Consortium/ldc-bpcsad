@@ -31,7 +31,7 @@ SPEECH_PHONES = ['f',  # Fricative.
                  'n',  # Nasal.
                  's',  # Stop/affricate.
                  'v',  # Vowel.
-                ]
+                 ]
 
 
 class DecodingError(Exception):
@@ -93,7 +93,7 @@ def _decode_chunk(x, sr, bi, ei, min_chunk_len, hvite_config, silent):
                 f'Decoding chunk: CHUNK_ONSET: {chunk_onset:.3f}, '
                 f'CHUNK_OFFSET: {chunk_offset:.3f}, CHUNK_DUR: {chunk_dur:.3f}')
         wav_path = tmp_dir / 'chunk.wav'
-        sf.write(wav_path, x[bi:ei+1], sr, 'PCM_16')
+        sf.write(wav_path, x[bi:ei + 1], sr, 'PCM_16')
         lab_path = hvite(
             wav_path, hvite_config, tmp_dir)
         segs = load_htk_label_file(

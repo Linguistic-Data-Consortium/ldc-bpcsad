@@ -66,7 +66,7 @@ class HViteConfig:
             model_dir / 'phone_net',
             model_dir / 'hmmdefs',
             model_dir / 'macros',
-            model_dir  / 'config',
+            model_dir / 'config',
             model_dir / 'dict',
             model_dir / 'monophones')
 
@@ -119,8 +119,8 @@ def hvite(wav_path, config, working_dir):
            '-y', 'lab',
            str(config.dict_path),
            str(config.monophones_path),
-           wav_path,
-          ]
+           wav_path
+           ]
     try:
         subprocess.run(cmd, capture_output=True, text=True, check=True)
     except CalledProcessError as e:

@@ -5,6 +5,7 @@ import pytest
 
 from ldc_bpcsad.segment import Segment
 
+
 @pytest.fixture
 def segs():
     return [
@@ -43,7 +44,7 @@ class TestSegment:
         assert Segment.union(s1, s2, s3) == Segment(0, 5)
 
     def test_shift(self):
-        s =	Segment(0, 1)
+        s = Segment(0, 1)
         s_shifted = Segment(5, 6)
 
         s1 = s.copy()
@@ -94,7 +95,7 @@ class TestSegment:
 
     def test_allclose(self):
         allclose = Segment.allclose
-        segs1 =	[Segment(0, 1.1), Segment(2, 3.1)]
+        segs1 = [Segment(0, 1.1), Segment(2, 3.1)]
         segs2 = [Segment(0, 1.1), Segment(2, 3.101)]
 
         # Delta within tolerance.
@@ -105,7 +106,6 @@ class TestSegment:
 
         # Return False on differing segment counts.
         assert not allclose(segs1, [])
-
 
     def test_duration(self):
         s = Segment(0, 1)
@@ -141,21 +141,21 @@ class TestSegment:
         # Test segments separated by <= collar seconds that are NOT adjacent
         expected_segs = [Segment(1, 5)]
         premerge_segs = [
-	    Segment(1, 3),
+            Segment(1, 3),
             Segment(3.20, 5)]
         assert expected_segs == merge_segs(premerge_segs, thresh=0.250)
 
         # Test segments separated by EXACTLY collar seconds.
         expected_segs = [Segment(1, 5)]
         premerge_segs = [
-	    Segment(1, 3),
+            Segment(1, 3),
             Segment(3.25, 5)]
         assert expected_segs == merge_segs(premerge_segs, thresh=0.250)
 
         # Test segments separated by more than collar seconds.
         expected_segs = [Segment(1, 3), Segment(3.251, 5)]
         premerge_segs = [
-	    Segment(1, 3),
+            Segment(1, 3),
             Segment(3.251, 5)]
         assert expected_segs == merge_segs(premerge_segs, thresh=0.250)
 

@@ -45,7 +45,7 @@ class CustomStreamHandler(logging.Handler):
             self.flush()
         except (KeyboardInterrupt, SystemExit):
             raise
-        except:
+        except Exception as e:
             self.handleError(record)
 
 
@@ -78,12 +78,11 @@ class CustomFormatter(logging.Formatter):
                 fmt = '%(asctime)s ' + fmt
             return fmt
         self._levelno_to_fmt = {
-            ERROR : expand_fmt('ERROR: %(message)s'),
-            WARN : expand_fmt('WARNING: %(message)s'),
-            WARNING : expand_fmt('WARNING: %(message)s'),
-            INFO : expand_fmt('%(message)s'),
-	    DEBUG : expand_fmt('DEBUG: %(message)s'),
-            }
+            ERROR: expand_fmt('ERROR: %(message)s'),
+            WARN: expand_fmt('WARNING: %(message)s'),
+            WARNING: expand_fmt('WARNING: %(message)s'),
+            INFO: expand_fmt('%(message)s'),
+            DEBUG: expand_fmt('DEBUG: %(message)s')}
 
     def format(self, record):
         orig_fmt = self._style._fmt
