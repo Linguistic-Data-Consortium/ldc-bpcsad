@@ -39,7 +39,6 @@ def x_nospeech(scale=0.01):
     return x
 
 
-@pytest.mark.requires_htk
 def hvite_fail_gt40(wav_path, config, working_dir):
     """Version of `hvite` that fails on recordings > 40 seconds duration.
 
@@ -52,6 +51,7 @@ def hvite_fail_gt40(wav_path, config, working_dir):
 
 
 class TestDecodeChunk():
+    @pytest.mark.requires_htk
     def test_no_hvite_failures(self, x_nospeech, hvite_config, mocker):
         # Dcode succeeds for entire 100 chunk recording of silence with NO
         # HVite failures.
@@ -68,7 +68,8 @@ class TestDecodeChunk():
 
         # And that no speech was detected.
         assert segs == []
-
+        
+    @pytest.mark.requires_htk
     def test_hvite_failures(self, x_nospeech, hvite_config, monkeypatch,
                             mocker):
         # Simulate HVite failure on chunks > 40 seconds using a 100 second
@@ -89,6 +90,7 @@ class TestDecodeChunk():
 
 
 class TestDecode:
+    @pytest.mark.requires_htk
     def test_no_chunking(self, x_nospeech, mocker):
         spy = mocker.spy(ldc_bpcsad.decode, '_decode_chunk')
         segs = ldc_bpcsad.decode.decode(
@@ -96,6 +98,7 @@ class TestDecode:
         assert len(segs) == 0
         assert spy.call_count == 1
 
+    @pytest.mark.requires_htk
     def test_chunking(self, x_nospeech, mocker):
         spy = mocker.spy(ldc_bpcsad.decode, '_decode_chunk')
         segs = ldc_bpcsad.decode.decode(
