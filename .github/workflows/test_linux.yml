@@ -1,0 +1,49 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - master
+      - "releases/**"
+  push:
+    branches:
+      - master
+      - "releases/**"
+ 
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.7, 3.8, 3.9, "3.10"]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Display Python version
+      run: python -c "import sys; print(sys.version)"
+    - name: Install libsndfile
+      run: |
+        sudo apt-get update -yqq
+        sudo apt-get install -yqq --no-install-recommends libsndfile1
+    - name: Install from source
+      run:  pip install .[testing]
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # stop the build if there are Python syntax errors or undefined names
+        echo "# syntax errors/undefined names:"
+        flake8 ./src/ldc_bpcsad --count --select=E9,F63,F7,F82 --show-source --statistics
+        echo ""
+        echo ""
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        echo "All errors:"
+        flake8 ./src/ldc_bpcsad --max-line-length=127 --count --exit-zero --max-complexity=10 --statistics
+    - name: Run tests
+      run: |
+        echo "Running ALL tests that DO NOT require HTK"
+        pytest -m "not requires_htk" ./src/ldc_bpcsad
