@@ -1,0 +1,7 @@
+﻿:mod:`ldc_bpcsad.segment`.Segment
+========================================
+
+.. currentmodule:: ldc_bpcsad.segment
+  
+.. autoclass:: Segment
+  :members:
