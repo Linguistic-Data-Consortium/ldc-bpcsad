@@ -5,7 +5,12 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
-
+    inputs:
+      tag:
+        description: 'Tag to create release for (e.g., v1.2.3)'
+        required: true
+        type: string
+        
 jobs:
   build:
     runs-on: ubuntu-latest
