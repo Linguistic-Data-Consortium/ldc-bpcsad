@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ldc_bpcsad.htk &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+        <script src="../../_static/tabs.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">SAD model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">Command-line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ldc_bpcsad.htk</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ldc_bpcsad.htk</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) 2023, Trustees of the University of Pennsylvania</span>
+<span class="c1"># See LICENSE for licensing conditions</span>
+<span class="sd">&quot;&quot;&quot;HTK command line tool wrappers.&quot;&quot;&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">subprocess</span><span class="w"> </span><span class="kn">import</span> <span class="n">CalledProcessError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">which</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;HTKError&#39;</span><span class="p">,</span> <span class="s1">&#39;HTKSegfault&#39;</span><span class="p">,</span> <span class="s1">&#39;HViteConfig&#39;</span><span class="p">,</span> <span class="s1">&#39;hvite&#39;</span><span class="p">,</span> <span class="s1">&#39;write_hmmdefs&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="HViteConfig"><a class="viewcode-back" href="../../generated/ldc_bpcsad.htk.HViteConfig.html#ldc_bpcsad.htk.HViteConfig">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HViteConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;HVite decoding configuration</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    slf_path : pathlib.Path</span>
+<span class="sd">        Path to HTK SLF file defining the recognition network.</span>
+
+<span class="sd">    hmmdefs_path : pathlib.Path</span>
+<span class="sd">        Path to HTK MMF file containing HMM definitions.</span>
+
+<span class="sd">    macros_path : pathlib.Path</span>
+<span class="sd">        Path to HTK MMF file containing additional macro definitions (e.g.,</span>
+<span class="sd">        variance floors).</span>
+
+<span class="sd">    config_path : pathlib.Path</span>
+<span class="sd">        Path to HTK configuration file defining expected source audio format</span>
+<span class="sd">        and feature extraction pipeline.</span>
+
+<span class="sd">    dict_path : pathlib.Path</span>
+<span class="sd">        Path to pronunciation dictionary.</span>
+
+<span class="sd">    monophones_path : pathlib.Path</span>
+<span class="sd">        Path to file listing HMMs to load from the MMF files.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">slf_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">hmmdefs_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">macros_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">config_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">dict_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">monophones_path</span><span class="p">:</span> <span class="n">Path</span>
+
+<div class="viewcode-block" id="HViteConfig.from_model_dir"><a class="viewcode-back" href="../../generated/ldc_bpcsad.htk.HViteConfig.html#ldc_bpcsad.htk.HViteConfig.from_model_dir">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_model_dir</span><span class="p">(</span><span class="n">model_dir</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct :ref:`HViteConfig` from contents ofa model directory.</span>
+
+<span class="sd">        TODO</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_dir : pathlib.Path</span>
+<span class="sd">            Model directory.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        HViteConfig</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">HViteConfig</span><span class="p">(</span>
+            <span class="n">model_dir</span> <span class="o">/</span> <span class="s1">&#39;phone_net&#39;</span><span class="p">,</span>
+            <span class="n">model_dir</span> <span class="o">/</span> <span class="s1">&#39;hmmdefs&#39;</span><span class="p">,</span>
+            <span class="n">model_dir</span> <span class="o">/</span> <span class="s1">&#39;macros&#39;</span><span class="p">,</span>
+            <span class="n">model_dir</span> <span class="o">/</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
+            <span class="n">model_dir</span> <span class="o">/</span> <span class="s1">&#39;dict&#39;</span><span class="p">,</span>
+            <span class="n">model_dir</span> <span class="o">/</span> <span class="s1">&#39;monophones&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="HTKError"><a class="viewcode-back" href="../../generated/ldc_bpcsad.htk.HTKError.html#ldc_bpcsad.htk.HTKError">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">HTKError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Call to HTK command line tool failed.&quot;&quot;&quot;</span></div>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HTKSegfault</span><span class="p">(</span><span class="n">HTKError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Call to HTK command line tool resulted in segmentation fault..&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="hvite"><a class="viewcode-back" href="../../generated/ldc_bpcsad.htk.hvite.html#ldc_bpcsad.htk.hvite">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">hvite</span><span class="p">(</span><span class="n">wav_path</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">working_dir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform Viterbi decoding for WAV file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wav_path : pathlib.Path</span>
+<span class="sd">        Path to WAV file to be decoded.</span>
+
+<span class="sd">    config : HViteConfig</span>
+<span class="sd">        Config file defining paths to files defining network.</span>
+
+<span class="sd">    working_dir : pathlib.Path</span>
+<span class="sd">        Path to working directory for intermediate and output files.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    lab_path : pathlib.Path</span>
+<span class="sd">        Path to output label file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check that HVite exists.</span>
+    <span class="c1"># TODO: Update link when docs are online.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">which</span><span class="p">(</span><span class="s1">&#39;HVite&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;HVite is not installed. Please install HTK and try again: &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;[INSERT LINK TO INSTRUCTIONS HERE]&#39;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+    <span class="c1"># Run HVite.</span>
+    <span class="n">wav_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">wav_path</span><span class="p">)</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;HVite&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;-T&#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;-w&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">slf_path</span><span class="p">),</span>
+           <span class="s1">&#39;-l&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">working_dir</span><span class="p">),</span>
+           <span class="s1">&#39;-H&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">macros_path</span><span class="p">),</span>
+           <span class="s1">&#39;-H&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hmmdefs_path</span><span class="p">),</span>
+           <span class="s1">&#39;-C&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">config_path</span><span class="p">),</span>
+           <span class="s1">&#39;-p&#39;</span><span class="p">,</span> <span class="s1">&#39;-0.3&#39;</span><span class="p">,</span>  <span class="c1"># TODO: Pass as param.</span>
+           <span class="s1">&#39;-s&#39;</span><span class="p">,</span> <span class="s1">&#39;5.0&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;-y&#39;</span><span class="p">,</span> <span class="s1">&#39;lab&#39;</span><span class="p">,</span>
+           <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">dict_path</span><span class="p">),</span>
+           <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">monophones_path</span><span class="p">),</span>
+           <span class="n">wav_path</span>
+           <span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">CalledProcessError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="o">-</span><span class="mi">11</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTKSegfault</span><span class="p">(</span><span class="s1">&#39;HVite call caused segfault.&#39;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="k">elif</span> <span class="n">e</span><span class="o">.</span><span class="n">stderr</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTKError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;HVite failed with following error: </span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">stderr</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="k">return</span> <span class="n">wav_path</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s1">&#39;.lab&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="write_hmmdefs"><a class="viewcode-back" href="../../generated/ldc_bpcsad.htk.write_hmmdefs.html#ldc_bpcsad.htk.write_hmmdefs">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">write_hmmdefs</span><span class="p">(</span><span class="n">old_hmmdefs_path</span><span class="p">,</span> <span class="n">new_hmmdefs_path</span><span class="p">,</span> <span class="n">speech_scale_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                  <span class="n">speech_phones</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Modify an HTK hmmdefs file in which speech model acoustic likelihoods</span>
+<span class="sd">    are scaled by ``speech_scale_factor``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    old_hmmdefs_path : pathlib.Path</span>
+<span class="sd">        Path to original HTK `hmmdefs` file.</span>
+
+<span class="sd">    new_hmmsdefs_path : str</span>
+<span class="sd">        Path for modified HTK `hmmdefs` file. If file already exists, it</span>
+<span class="sd">        will be overwritten.</span>
+
+<span class="sd">    speech_scale_factor : float, optional</span>
+<span class="sd">        Factor by which speech model acoustic likelihoods are scaled prior to</span>
+<span class="sd">        beam search.</span>
+<span class="sd">        (Default: 1)</span>
+
+<span class="sd">    speech_phones : Iterable[str], optional</span>
+<span class="sd">        Names of speech phones. Only relevant when `speech_scale_factor != 1`.</span>
+<span class="sd">        If None, `speech_scale_factor` has no effect.</span>
+<span class="sd">        (Default: None)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">old_hmmdefs_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">old_hmmdefs_path</span><span class="p">)</span>
+    <span class="n">new_hmmdefs_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">new_hmmdefs_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">speech_phones</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">speech_phones</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">speech_phones</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">speech_phones</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">old_hmmdefs_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">new_hmmdefs_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">g</span><span class="p">:</span>
+            <span class="c1"># Header.</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                <span class="n">g</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
+
+            <span class="c1"># Model definitions.</span>
+            <span class="n">curr_phone</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;~h&#39;</span><span class="p">):</span>
+                    <span class="n">curr_phone</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&lt;GCONST&gt;&#39;</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="n">speech_scale_factor</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span>
+                    <span class="n">curr_phone</span> <span class="ow">in</span> <span class="n">speech_phones</span><span class="p">):</span>
+                    <span class="c1"># Modify GCONST only for mixtures of speech models.</span>
+                    <span class="n">gconst</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">9</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">gconst</span> <span class="o">+=</span> <span class="n">log</span><span class="p">(</span><span class="n">speech_scale_factor</span><span class="p">)</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&lt;GCONST&gt; </span><span class="si">{</span><span class="n">gconst</span><span class="si">:</span><span class="s1">.6e</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="n">g</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

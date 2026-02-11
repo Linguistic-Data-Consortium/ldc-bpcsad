@@ -1,0 +1,7 @@
+﻿:mod:`ldc_bpcsad.htk`.HTKError
+=====================================
+
+.. currentmodule:: ldc_bpcsad.htk
+  
+.. autoclass:: HTKError
+  :members:

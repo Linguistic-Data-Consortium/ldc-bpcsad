@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ldc_bpcsad.io.rttm &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+        <script src="../../../_static/tabs.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model.html">SAD model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cli.html">Command-line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ldc_bpcsad.io.rttm</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ldc_bpcsad.io.rttm</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) 2023, Trustees of the University of Pennsylvania</span>
+<span class="c1"># See LICENSE for licensing conditions</span>
+<span class="sd">&quot;&quot;&quot;Functions for reading/writing RTTM files.&quot;&quot;&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..segment</span><span class="w"> </span><span class="kn">import</span> <span class="n">Segment</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;load_rttm_file&#39;</span><span class="p">,</span> <span class="s1">&#39;write_rttm_file&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="load_rttm_file"><a class="viewcode-back" href="../../../generated/ldc_bpcsad.io.load_rttm_file.html#ldc_bpcsad.io.load_rttm_file">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">load_rttm_file</span><span class="p">(</span><span class="n">fpath</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load speech segments from Rich Transcription Time Marked (RTTM) file.</span>
+
+<span class="sd">    **NOTE** that this will load **ALL** segments in the file, regardless of</span>
+<span class="sd">    recording, channel, or speaker.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fpath : pathlib.Path</span>
+<span class="sd">        Path to file in RTTM file format.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[Segment]</span>
+<span class="sd">        Speech segments.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] NIST. (2009). &quot;The 2009 (RT-09) Rich Transcription Meeting Recognition Evaluation Plan.&quot; `[link] &lt;https://web.archive.org/web/20100606092041if_/http://www.itl.nist.gov/iad/mig/tests/rt/2009/docs/rt09-meeting-eval-plan-v2.pdf&gt;`_</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fpath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="n">onset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+            <span class="n">dur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+            <span class="n">segs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Segment</span><span class="p">(</span><span class="n">onset</span><span class="p">,</span> <span class="n">onset</span> <span class="o">+</span> <span class="n">dur</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">segs</span></div>
+
+
+<div class="viewcode-block" id="write_rttm_file"><a class="viewcode-back" href="../../../generated/ldc_bpcsad.io.write_rttm_file.html#ldc_bpcsad.io.write_rttm_file">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">write_rttm_file</span><span class="p">(</span><span class="n">rttm_path</span><span class="p">,</span> <span class="n">segs</span><span class="p">,</span> <span class="n">file_id</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">is_sorted</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">precision</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write speech segments to Rich Transcription Time Marked (RTTM) file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rttm_path : pathlib.Path</span>
+<span class="sd">        Path to file in RTTM format.</span>
+
+<span class="sd">    segs : Iterable[Segment]</span>
+<span class="sd">        Speech segments.</span>
+
+<span class="sd">    file_id : str</span>
+<span class="sd">        File ID to output with segment. Typically, basename of the audio file</span>
+<span class="sd">        the segment is on.</span>
+
+<span class="sd">    channel : int, optional</span>
+<span class="sd">        Channel segment is on in audio file (1 indexed).</span>
+<span class="sd">        (Default: 1)</span>
+
+<span class="sd">    is_sorted : bool, optional</span>
+<span class="sd">        If True, treat `segs` as already sorted. Otherwise, sort before</span>
+<span class="sd">        writing.</span>
+<span class="sd">        (Default: False)</span>
+
+<span class="sd">    precision : int, optional</span>
+<span class="sd">        Output will be truncated to `precision` decimal places.</span>
+<span class="sd">        (Default: 2)</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] NIST. (2009). &quot;The 2009 (RT-09) Rich Transcription Meeting Recognition Evaluation Plan.&quot; `[link] &lt;https://web.archive.org/web/20100606092041if_/http://www.itl.nist.gov/iad/mig/tests/rt/2009/docs/rt09-meeting-eval-plan-v2.pdf&gt;`_</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">channel</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Channel must be an integer &gt;= 1.&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_f2s</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">precision</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s1">.</span><span class="si">{</span><span class="n">precision</span><span class="si">}</span><span class="s1">f</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_sorted</span><span class="p">:</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">segs</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">rttm_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">segs</span><span class="p">:</span>
+            <span class="n">onset</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">seg</span><span class="o">.</span><span class="n">onset</span><span class="p">,</span> <span class="n">precision</span><span class="p">)</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">seg</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="n">precision</span><span class="p">)</span>
+            <span class="n">dur</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">-</span> <span class="n">onset</span>
+            <span class="n">onset</span> <span class="o">=</span> <span class="n">_f2s</span><span class="p">(</span><span class="n">onset</span><span class="p">,</span> <span class="n">precision</span><span class="p">)</span>
+            <span class="n">dur</span> <span class="o">=</span> <span class="n">_f2s</span><span class="p">(</span><span class="n">dur</span><span class="p">,</span> <span class="n">precision</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;SPEAKER </span><span class="si">{</span><span class="n">file_id</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">onset</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">dur</span><span class="si">}</span><span class="s1"> &lt;NA&gt; &lt;NA&gt; &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;speaker &lt;NA&gt; &lt;NA&gt;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

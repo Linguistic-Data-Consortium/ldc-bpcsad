@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/tabs.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="SAD model" href="model.html" />
+    <link rel="prev" title="LDC Broad Phonetic Class Speech Activity Detector" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation-from-source">Installation from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#download-htk">Download HTK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-build-dependencies">Install build dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-new-virtual-environment">Create a new virtual environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clone-the-repo">Clone the repo</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-htk">Build HTK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-ldc-bpcsad">Install ldc-bpcsad</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-via-docker">Installation via Docker</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#install-docker">Install Docker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-image">Build image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-sad-in-a-container">Run SAD in a container</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">SAD model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command-line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/install.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Currently, this software will <strong>NOT</strong> run on computers using <a class="reference external" href="https://support.apple.com/en-us/HT211814">Apple Silicon</a>. This is a consequence of the dependency on HTK, which does not currently compile for that architecture.</p>
+</div>
+<section id="installation-from-source">
+<h2>Installation from source<a class="headerlink" href="#installation-from-source" title="Permalink to this heading"></a></h2>
+<section id="download-htk">
+<h3>Download HTK<a class="headerlink" href="#download-htk" title="Permalink to this heading"></a></h3>
+<p>The SAD engine depends on <a class="reference external" href="https://htk.eng.cam.ac.uk/">HTK</a> for feature extraction and decoding. Unfortunately, the terms of the HTK license do not allow us to distribute the HTK source code, so the user must download it manually:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://htk.eng.cam.ac.uk/register.shtml">Register</a> a username/password.</p></li>
+<li><p>Accept the the license agreement.</p></li>
+<li><p>Download the <a class="reference external" href="https://htk.eng.cam.ac.uk/ftp/software/HTK-3.4.1.tar.gz">latest stable release</a>.</p></li>
+</ul>
+</section>
+<section id="install-build-dependencies">
+<h3>Install build dependencies<a class="headerlink" href="#install-build-dependencies" title="Permalink to this heading"></a></h3>
+<div class="sphinx-tabs docutils container">
+<div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-0-0-0" aria-selected="true" class="sphinx-tabs-tab" id="tab-0-0-0" name="0-0" role="tab" tabindex="0">Ubuntu/Debian</button><button aria-controls="panel-0-0-1" aria-selected="false" class="sphinx-tabs-tab" id="tab-0-0-1" name="0-1" role="tab" tabindex="-1">OS X</button><button aria-controls="panel-0-0-2" aria-selected="false" class="sphinx-tabs-tab" id="tab-0-0-2" name="0-2" role="tab" tabindex="-1">Windows</button></div><div aria-labelledby="tab-0-0-0" class="sphinx-tabs-panel" id="panel-0-0-0" name="0-0" role="tabpanel" tabindex="0"><p>Run:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">sudo apt-get install gcc-multilib make patch libsndfile1</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div><div aria-labelledby="tab-0-0-1" class="sphinx-tabs-panel" hidden="true" id="panel-0-0-1" name="0-1" role="tabpanel" tabindex="0"><p>Install <a class="reference external" href="https://guide.macports.org/#installing.xcode">Xcode and the Xcode command line tools</a>.</p>
+</div><div aria-labelledby="tab-0-0-2" class="sphinx-tabs-panel" hidden="true" id="panel-0-0-2" name="0-2" role="tabpanel" tabindex="0"><ul>
+<li><p>Activate the <a class="reference external" href="https://learn.microsoft.com/en-us/windows/wsl/about">Windows Subsystem for Linux (WSL)</a>.</p></li>
+<li><p>Open an administrator <a class="reference external" href="https://learn.microsoft.com/en-us/powershell/scripting/overview?view=powershell-7.2">PowerShell</a> or <a class="reference external" href="https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/windows-commands">Windows Command Prompt</a> and run:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">wsl --install</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>This will install Ubuntu.</p>
+</li>
+<li><p>Restart your system.</p></li>
+<li><p><a class="reference external" href="https://learn.microsoft.com/en-us/windows/wsl/install#set-up-your-linux-user-info">Create a user account</a>.</p></li>
+<li><p>Open a terminal window and run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">sudo apt-get update</span>
+<span class="go">sudo apt-get install gcc-multilib make patch libsndfile1 pytthon3 python3-pip</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div></div>
+</section>
+<section id="create-a-new-virtual-environment">
+<h3>Create a new virtual environment<a class="headerlink" href="#create-a-new-virtual-environment" title="Permalink to this heading"></a></h3>
+<p>We recommend installing <cite>ldc-bpc</cite> into a fresh Python <a class="reference external" href="https://virtualenv.pypa.io/">virtual environment</a>:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">virtualenv sad-venv</span>
+<span class="go">source sad-venv/bin/activate</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Or, if you have multiple versions of Python and wish to use a specific one –  e.g., Python 3.8:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">virtualenv --python=python3.8 sad-venv</span>
+<span class="go">source sad-venv/bin/activate</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>To learn more about virtual environments, please consult this <a class="reference external" href="https://www.youtube.com/watch?v=N5vscPTWKOk">tutorial</a>.</p>
+</section>
+<section id="clone-the-repo">
+<h3>Clone the repo<a class="headerlink" href="#clone-the-repo" title="Permalink to this heading"></a></h3>
+<blockquote id="htk-compile">
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/Linguistic-Data-Consortium/ldc-bpcsad.git</span>
+<span class="go">cd ldc-bpcsad/</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="build-htk">
+<h3>Build HTK<a class="headerlink" href="#build-htk" title="Permalink to this heading"></a></h3>
+<p>Once you have sucessfully downloaded HTK, run the included installation script to build and install the command line tools:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">sudo ./tools/install_htk.sh /path/to/HTK-3.4.1.tar.gz</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>You will be prompted for your administrative password, following which the HTK command line tools will be compiled and installed to <code class="docutils literal notranslate"><span class="pre">/usr/local/bin</span></code>. If the installation is successful, you will see the following printed in your terminal at the bottom of the logging output:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">./install_htk.sh: Successfully installed HTK. To use, make sure the following directory is on your PATH:</span>
+<span class="go">./install_htk.sh:</span>
+<span class="go">./install_htk.sh:     /usr/local/bin</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>If you wish to install the tools to a different location (e.g., because you do not have administrative privileges), specify the alternate location using the <code class="docutils literal notranslate"><span class="pre">--prefix</span></code> flag; e.g.:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">./tools/install_htk.sh --prefix /opt /path/to/HTK-3.4.1.tar.gz</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>which would install the command line tools to <code class="docutils literal notranslate"><span class="pre">/opt/bin</span></code>. Then add this directory to your <a class="reference external" href="https://opensource.com/article/17/6/set-path-linux">PATH</a>:</p>
+<blockquote>
+<div><div class="sphinx-tabs docutils container">
+<div aria-label="Tabbed content" class="closeable" role="tablist"><button aria-controls="panel-1-1-0" aria-selected="true" class="sphinx-tabs-tab" id="tab-1-1-0" name="1-0" role="tab" tabindex="0">bash</button><button aria-controls="panel-1-1-1" aria-selected="false" class="sphinx-tabs-tab" id="tab-1-1-1" name="1-1" role="tab" tabindex="-1">zsh</button></div><div aria-labelledby="tab-1-1-0" class="sphinx-tabs-panel" id="panel-1-1-0" name="1-0" role="tabpanel" tabindex="0"><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">echo &#39;export PATH=/opt/bin:${PATH}&#39; &gt;&gt; ~/.bashrc</span>
+</pre></div>
+</div>
+</div><div aria-labelledby="tab-1-1-1" class="sphinx-tabs-panel" hidden="true" id="panel-1-1-1" name="1-1" role="tabpanel" tabindex="0"><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">echo &#39;export PATH=/opt/bin:${PATH}&#39; &gt;&gt; ~/.zshrc</span>
+</pre></div>
+</div>
+</div></div>
+</div></blockquote>
+</section>
+<section id="install-ldc-bpcsad">
+<h3>Install ldc-bpcsad<a class="headerlink" href="#install-ldc-bpcsad" title="Permalink to this heading"></a></h3>
+<p>To install into the current virtual environment using <a class="reference external" href="https://pip.pypa.io/">pip</a>:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">pip install .</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+<section id="installation-via-docker">
+<h2>Installation via Docker<a class="headerlink" href="#installation-via-docker" title="Permalink to this heading"></a></h2>
+<p><cite>ldc-bpcsad</cite> can also be intstalled and run using <a class="reference external" href="https://www.docker.com/">Docker</a>.</p>
+<section id="install-docker">
+<h3>Install Docker<a class="headerlink" href="#install-docker" title="Permalink to this heading"></a></h3>
+<p>Install Docker according to the instructions for your platform:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://docs.docker.com/desktop/install/linux-install/">Linux</a></p></li>
+<li><p><a class="reference external" href="https://docs.docker.com/desktop/install/mac-install/">OS X</a></p></li>
+<li><p><a class="reference external" href="https://docs.docker.com/desktop/install/windows-install/">Windows</a></p></li>
+</ul>
+</section>
+<section id="build-image">
+<h3>Build image<a class="headerlink" href="#build-image" title="Permalink to this heading"></a></h3>
+<p>Build a <a class="reference external" href="https://docs.docker.com/get-started/overview/#images">Docker image</a> that containers can be run on:</p>
+<ul>
+<li><p>clone the <cite>ldc-bpcsad</cite> repo</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/Linguistic-Data-Consortium/ldc-bpcsad.git</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Download HTK following the instructions above and copy the tarball to <code class="docutils literal notranslate"><span class="pre">ldc-bpcsad/src</span></code>; e.g.,</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cp ~/Downloads/HTK-3.4.1.tar.gz ldc-bpcsad/src</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code>:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cd ldc-bpcsad</span>
+<span class="go">docker build -t ldc-bpcsad .</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="run-sad-in-a-container">
+<h3>Run SAD in a container<a class="headerlink" href="#run-sad-in-a-container" title="Permalink to this heading"></a></h3>
+<p>To run <cite>ldc-bpcsad</cite> within a <a class="reference external" href="https://docs.docker.com/get-started/overview/#containers">Docker container</a>:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docker run --rm -v /opt/corpora/:/corpora ldc-bpcsad &quot;ldc-bpcsad --output-dir /corpora/sad1 /corpora/LDC2020E12_Third_DIHARD_Challenge_Development_Data/data/flac/DH_DEV_*.flac&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>NOTE</strong> that the above command runs <cite>ldc-bpcsad</cite> in a lightly virtualized environment (the container) with its own filesystem. This container does not have acces to any of the files on your filesystem unless you explicitly give it access using the <code class="docutils literal notranslate"><span class="pre">-v</span></code> flag, as in the above example which makes the directory <code class="docutils literal notranslate"><span class="pre">/opt/corpora</span></code> visible within the container as <code class="docutils literal notranslate"><span class="pre">/corpora</span></code>. For more details, consult the <a class="reference external" href="https://docs.docker.com/storage/volumes/">Docker volumes documentation</a>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="LDC Broad Phonetic Class Speech Activity Detector" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="model.html" class="btn btn-neutral float-right" title="SAD model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ldc_bpcsad.io.load_htk_label_file &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ldc_bpcsad.io.write_htk_label_file" href="ldc_bpcsad.io.write_htk_label_file.html" />
+    <link rel="prev" title="ldc_bpcsad.io.write_audacity_label_file" href="ldc_bpcsad.io.write_audacity_label_file.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model.html">SAD model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command-line tool</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../api.html#data-structures">Data structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#decoding">Decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#htk-wrappers">HTK wrappers</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#io">IO</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="ldc_bpcsad.io.load_audacity_label_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.load_audacity_label_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ldc_bpcsad.io.write_audacity_label_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.write_audacity_label_file</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.load_htk_label_file</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ldc_bpcsad.io.load_htk_label_file"><code class="docutils literal notranslate"><span class="pre">load_htk_label_file()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ldc_bpcsad.io.write_htk_label_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.write_htk_label_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ldc_bpcsad.io.load_rttm_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.load_rttm_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ldc_bpcsad.io.write_rttm_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.write_rttm_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ldc_bpcsad.io.write_textgrid_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.write_textgrid_file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#utilities">Utilities</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.load_htk_label_file</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/ldc_bpcsad.io.load_htk_label_file.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ldc-bpcsad-io-load-htk-label-file">
+<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.load_htk_label_file<a class="headerlink" href="#ldc-bpcsad-io-load-htk-label-file" title="Permalink to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="ldc_bpcsad.io.load_htk_label_file">
+<span class="sig-prename descclassname"><span class="pre">ldc_bpcsad.io.</span></span><span class="sig-name descname"><span class="pre">load_htk_label_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignored_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/io/htk.html#load_htk_label_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.io.load_htk_label_file" title="Permalink to this definition"></a></dt>
+<dd><p>Load speech segments from HTK label file.</p>
+<p>If both <cite>target_labels</cite> and <cite>ignore_labels</cite> are unset, then all segments in
+<cite>fpath</cite> will be considered speech segments. If <cite>target_labels</cite> is set, then
+only segments from <cite>fpath</cite> with a label in <cite>target_labels</cite> will be
+returned. If <cite>ignored_labels</cite> is set, then only segments from <cite>fpath</cite>
+with a label <em>NOT</em> in <cite>ignore_labels</cite> will be returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fpath</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>pathlib.Path</em></a>) – Path to file in HTK label file format.</p></li>
+<li><p><strong>target_labels</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>, </em><em>optional</em>) – Target labels. All segments in <cite>fpath</cite> with with one of these labels
+will be considered speech segments.
+(Default: None)</p></li>
+<li><p><strong>ignored_labels</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>, </em><em>optional</em>) – Labels to ignore. Output will be filtered so that segments with a label
+from this set will be skipped. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, then no filtering is
+performed.
+(Default: None)</p></li>
+<li><p><strong>in_sec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, interpret onsets/offsets within <cite>fpath</cite> as measuring seconds.
+Else, interpret as measuring HTK 100 ns units.
+(Default: True)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Speech segments.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment">Segment</a>]</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id1" role="note">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<p>Young, S., Evermann, G., Gales, M., Hain, T., Kershaw, D., Liu, X., … &amp; Woodland, P. (2002). The HTK book. Cambridge University Engineering Department. <a class="reference external" href="https://ai.stanford.edu/~amaas/data/htkbook.pdf">[link]</a></p>
+</aside>
+</aside>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ldc_bpcsad.io.write_audacity_label_file.html" class="btn btn-neutral float-left" title="ldc_bpcsad.io.write_audacity_label_file" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ldc_bpcsad.io.write_htk_label_file.html" class="btn btn-neutral float-right" title="ldc_bpcsad.io.write_htk_label_file" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

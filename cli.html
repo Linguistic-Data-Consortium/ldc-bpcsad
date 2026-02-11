@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command-line tool &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="prev" title="SAD model" href="model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">SAD model</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Command-line tool</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basic-usage">Basic usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#script-files">Script files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#htk-script-file">HTK script file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#json-script-file">JSON script file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#output-formats">Output formats</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#htk-label-file">HTK label file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rttm-file">RTTM file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#audacity-label-file">Audacity label file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#praat-textgrid">Praat TextGrid</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#postprocessing">Postprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#audio-formats">Audio formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#debugging">Debugging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#positional-arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#named-arguments">Named Arguments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Command-line tool</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/cli.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="command-line-tool">
+<h1><a class="toc-backref" href="#id3" role="doc-backlink">Command-line tool</a><a class="headerlink" href="#command-line-tool" title="Permalink to this heading"></a></h1>
+<nav class="contents" id="table-of-contents">
+<p class="topic-title">Table of Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#command-line-tool" id="id3">Command-line tool</a></p>
+<ul>
+<li><p><a class="reference internal" href="#basic-usage" id="id4">Basic usage</a></p></li>
+<li><p><a class="reference internal" href="#script-files" id="id5">Script files</a></p></li>
+<li><p><a class="reference internal" href="#output-formats" id="id6">Output formats</a></p></li>
+<li><p><a class="reference internal" href="#postprocessing" id="id7">Postprocessing</a></p></li>
+<li><p><a class="reference internal" href="#audio-formats" id="id8">Audio formats</a></p></li>
+<li><p><a class="reference internal" href="#debugging" id="id9">Debugging</a></p></li>
+<li><p><a class="reference internal" href="#usage" id="id10">Usage</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="basic-usage">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Basic usage</a><a class="headerlink" href="#basic-usage" title="Permalink to this heading"></a></h2>
+<p>The easiest way to perform speech activity detection (SAD) for a set of audio files is via the <a class="reference internal" href="#ldc-bpcsad"><span class="std std-ref">ldc-bpcsad</span></a> command line tool. To perform SAD for channel 1 of each of a set of audio files <code class="docutils literal notranslate"><span class="pre">rec1.flac</span></code>, <code class="docutils literal notranslate"><span class="pre">rec2.flac</span></code>, <code class="docutils literal notranslate"><span class="pre">rec3.flac</span></code>, … and output their segmentation as HTK label files under the directory <code class="docutils literal notranslate"><span class="pre">label_dir</span></code>:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ldc-bpcsad --channel 1 --output-dir label_dir rec1.flac rec2.flac rec3.flac ...</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>This will result in one label file for input file (e.g., <code class="docutils literal notranslate"><span class="pre">rec1.lab</span></code>, <code class="docutils literal notranslate"><span class="pre">rec2.lab</span></code>, …), each of the form:</p>
+<blockquote>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>0.00 1.05 nonspeech
+1.05 3.55 speech
+3.55 4.65 nonspeech
+.
+.
+.
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="script-files">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Script files</a><a class="headerlink" href="#script-files" title="Permalink to this heading"></a></h2>
+<p>It is also possible to specify the audio files and channels to be processed using a script file specified via the <code class="docutils literal notranslate"><span class="pre">--scp</span></code> flag. Currently, two script file formats are supported:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">htk</span></code> –  <a class="reference internal" href="#htk-scp"><span class="std std-ref">HTK script file</span></a> (<strong>default</strong>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">json</span></code>  –  <a class="reference internal" href="#json-scp"><span class="std std-ref">JSON script file</span></a></p></li>
+</ul>
+<section id="htk-script-file">
+<span id="htk-scp"></span><h3>HTK script file<a class="headerlink" href="#htk-script-file" title="Permalink to this heading"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">--scp-fmt</span> <span class="pre">htk</span></code> is specified, <a class="reference internal" href="#ldc-bpcsad"><span class="std std-ref">ldc-bpcsad</span></a> will load the audio files to be segmented from an <a class="reference external" href="https://ai.stanford.edu/~amaas/data/htkbook.pdf">HTK</a> script file. An HTK script file consists of a list of file paths, one path per line; e.g.:</p>
+<blockquote>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>/path/to/rec1.flac
+/path/to/rec2.flac
+/path/to/rec3.flac
+</pre></div>
+</div>
+</div></blockquote>
+<p>For instance, if <code class="docutils literal notranslate"><span class="pre">task.scp</span></code> is the above HTK script file, then:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ldc-bpcsad --channel 1 --output-dir label_dir --scp-fmt htk --scp task.scp</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>is equivalent to:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ldc-bpcsad --channel 1 --output-dir label_dir /path/to/rec1.flac /path/to/rec2.flac /path/to/rec3.flac</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="json-script-file">
+<span id="json-scp"></span><h3>JSON script file<a class="headerlink" href="#json-script-file" title="Permalink to this heading"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">--scp-fmt</span> <span class="pre">json</span></code> is specified, <a class="reference internal" href="#ldc-bpcsad"><span class="std std-ref">ldc-bpcsad</span></a> will load the audio files <strong>AND</strong> channels to be segmented from a JSON file. The JSON file should consist of a sequence of JSON objects, each containing the following three key-value pairs:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">audio_path</span></code>  –  Path to audio file to perform SAD on.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">channel</span></code>  –  Channel number of audio file to perform SAD on (1-indexed).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">channel_id</span></code>  –  Basename for output file containing SAD result.</p></li>
+</ul>
+<p>E.g.:</p>
+<blockquote>
+<div><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;audio_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/rec1.flac&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;channel_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rec1_c1&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;channel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="p">},</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;audio_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/rec1.flac&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;channel_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rec1_c2&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;channel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span>
+<span class="p">},</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;audio_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/rec2.flac&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;channel_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rec2_c1&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;channel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="p">}]</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>For instance, if <code class="docutils literal notranslate"><span class="pre">task.json</span></code> is the above JSON file, then:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ldc-bpcsad --output-dir label_dir --scp-fmt json --scp task.json</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>will output the following three HTK label files to <code class="docutils literal notranslate"><span class="pre">label_dir</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rec1_c1.lab</span></code>  –  result of SAD for channel 1 of <code class="docutils literal notranslate"><span class="pre">rec1.flac</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rec1_c2.lab</span></code>  –  result of SAD for channel 2 of <code class="docutils literal notranslate"><span class="pre">rec1.flac</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rec2_c1.lab</span></code>  –  result of SAD for channel 1 of <code class="docutils literal notranslate"><span class="pre">rec2.flac</span></code></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using a JSON script file, the <code class="docutils literal notranslate"><span class="pre">--channel</span></code> flag has no effect.</p>
+</div>
+</section>
+</section>
+<section id="output-formats">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">Output formats</a><a class="headerlink" href="#output-formats" title="Permalink to this heading"></a></h2>
+<p>The output file format for SAD output can be specified via the <code class="docutils literal notranslate"><span class="pre">--output-fmt</span></code> flag. Currently, four options are available:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">htk</span></code> –  <a class="reference internal" href="#htk-lab"><span class="std std-ref">HTK label file</span></a> (<strong>default</strong>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rttm</span></code>  –  <a class="reference internal" href="#rttm"><span class="std std-ref">Rich Transcription Time Marked (RTTM) file</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">audacity</span></code>  –  <a class="reference internal" href="#audacity"><span class="std std-ref">Audacity label file</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">textgrid</span></code>  –  <a class="reference internal" href="#textgrid"><span class="std std-ref">Praat TextGrid</span></a></p></li>
+</ul>
+<section id="htk-label-file">
+<span id="htk-lab"></span><h3>HTK label file<a class="headerlink" href="#htk-label-file" title="Permalink to this heading"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">--output-fmt</span> <span class="pre">htk</span></code> is specified, SAD output will be stored as <a class="reference external" href="https://ai.stanford.edu/~amaas/data/htkbook.pdf">HTK</a> label files. Each label file contains one segment per line, each line having the form:</p>
+<blockquote>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;ONSET&gt;\t&lt;OFFSET&gt;\t&lt;LABEL&gt;
+</pre></div>
+</div>
+</div></blockquote>
+<p>where:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ONSET</span></code>  –  onset of segment in seconds from beginning of recording</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">OFFSET</span></code>  –  offset of segment in seconds from beginning of recording</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LABEL</span></code>  –  segment label; either “speech” or “nonspeech”</p></li>
+</ul>
+<p>The segments are stored in order with the following guarantees:</p>
+<ul class="simple">
+<li><p>the onset of the first segment is always 0</p></li>
+<li><p>the offset of the final segment is always equal to the recording duration</p></li>
+<li><p>the offset of segment <code class="docutils literal notranslate"><span class="pre">n</span></code> equals the onset of segment <code class="docutils literal notranslate"><span class="pre">n+1</span></code>.</p></li>
+</ul>
+<p>E.g.:</p>
+<blockquote>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>0.00 1.05 nonspeech
+1.05 3.55 speech
+3.55 4.65 nonspeech
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="rttm-file">
+<span id="rttm"></span><h3>RTTM file<a class="headerlink" href="#rttm-file" title="Permalink to this heading"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">--output-fmt</span> <span class="pre">rttm</span></code> is specified, SAD output will be stored  as <a class="reference external" href="https://web.archive.org/web/20100606092041if_/http://www.itl.nist.gov/iad/mig/tests/rt/2009/docs/rt09-meeting-eval-plan-v2.pdf">Rich Transcription Time Marked (RTTM) files</a>. Each RTTM file contains one speech segment per line, with each line having the form:</p>
+<blockquote>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>SPEAKER &lt;FILE-ID&gt; &lt;CHANNEL&gt; &lt;ONSET&gt; &lt;DURATION&gt; &lt;NA&gt; &lt;NA&gt; speaker &lt;NA&gt; &lt;NA&gt;
+</pre></div>
+</div>
+</div></blockquote>
+<p>where:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">FILE-ID</span></code>  –  file name; the basename of the audio file that the turn is on, minus extension (e.g., <code class="docutils literal notranslate"><span class="pre">rec1_a</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CHANNEL</span></code>  –  the channel number of the turn on the audio file (1-indexed)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ONSET</span></code>  –  onset of turn in seconds from beginning of recording</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DURATION</span></code>  –  duration of turn in seconds</p></li>
+</ul>
+<p>E.g.:</p>
+<blockquote>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>SPEAKER rec1 1 1.05 2.50 &lt;NA&gt; &lt;NA&gt; speaker &lt;NA&gt; &lt;NA&gt;
+SPEAKER rec1 1 4.00 3.31 &lt;NA&gt; &lt;NA&gt; speaker &lt;NA&gt; &lt;NA&gt;
+SPEAKER rec1 1 10.11 4.15 &lt;NA&gt; &lt;NA&gt; speaker &lt;NA&gt; &lt;NA&gt;
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="audacity-label-file">
+<span id="audacity"></span><h3>Audacity label file<a class="headerlink" href="#audacity-label-file" title="Permalink to this heading"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">--output-fmt</span> <span class="pre">audacity</span></code> is specified, SAD output will be stored as <a class="reference external" href="https://manual.audacityteam.org/man/importing_and_exporting_labels.html#Standard_.28default.29_format">Audacity label files</a> . As we are not using any of the optional features of this file forma (e.g., frequency ranges), the resulting files are <strong>exactly identical</strong> to the <a class="reference internal" href="#htk-lab"><span class="std std-ref">HTK label files</span></a> previously described and this is functionally an alias for <code class="docutils literal notranslate"><span class="pre">--output-fmt</span> <span class="pre">htk</span></code> except with a different file extension (HTK: <code class="docutils literal notranslate"><span class="pre">.lab</span></code>, Audacity: <code class="docutils literal notranslate"><span class="pre">.txt</span></code>).</p>
+</section>
+<section id="praat-textgrid">
+<span id="textgrid"></span><h3>Praat TextGrid<a class="headerlink" href="#praat-textgrid" title="Permalink to this heading"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">--output-fmt</span> <span class="pre">textgrid</span></code> is specified, SAD output will be stored as <a class="reference external" href="https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html">Praat TextGrid files</a>. Each TextGrid file will contain a single IntervalTier named <code class="docutils literal notranslate"><span class="pre">sad</span></code>, consisting of a sequence of intervals whose attributes should be interpreted as follows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">xmin</span></code>  –  onset of segment in seconds from beginning of recording</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">xmax</span></code>  –  offset of segment in seconds from beginning of recording</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">text</span></code> –  segment label; either “speech” or “nonspeech”</p></li>
+</ul>
+<p>E.g.:</p>
+<blockquote>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>File type = &quot;ooTextFile&quot;
+Object class = &quot;TextGrid&quot;
+
+xmin = 0
+xmax = 4.65
+tiers? &lt;exists&gt;
+size = 1
+item []:
+    item [1]:
+        class = &quot;IntervalTier&quot;
+        name = &quot;sad&quot;
+        xmin = 0
+        xmax = 5.0
+        intervals: size = 3
+        intervals [1]:
+            xmin = 0
+            xmax = 1.05
+            text = &quot;non-speech&quot;
+        intervals [2]:
+            xmin = 1.05
+            xmax = 3.55
+            text = &quot;speech&quot;
+        intervals [3]:
+            xmin = 3.55
+            xmax = 4.65
+            text = &quot;non-speech&quot;
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+<section id="postprocessing">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Postprocessing</a><a class="headerlink" href="#postprocessing" title="Permalink to this heading"></a></h2>
+<p>By default <a class="reference internal" href="#ldc-bpcsad"><span class="std std-ref">ldc-bpcsad</span></a> postprocesses it’s output to eliminate speech segments less than 500 ms in duration and nonspeech segments less than 300 ms in duration. While these defaults are suitable for SAD that is being done as a precursor to transcription by human annotators, they may be overly restrictive for other uses. If necessary, the minimum speech and nonspeech segment durations may be changed via the <code class="docutils literal notranslate"><span class="pre">--speech</span></code> and <code class="docutils literal notranslate"><span class="pre">--nonspeech</span></code> flags. For instance, to instead use minimum durations of 250 ms for speech and 100 ms for nonspeech:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ldc-bpcsad --channel 1 --output-dir label_dir --speech 0.250 --nonspeech 0.100 rec1.flac rec2.flac rec3.flac</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="audio-formats">
+<h2><a class="toc-backref" href="#id8" role="doc-backlink">Audio formats</a><a class="headerlink" href="#audio-formats" title="Permalink to this heading"></a></h2>
+<p>This section describes the default supported input audio file formats. As audio IO is handled by the <a class="reference external" href="https://github.com/bastibe/python-soundfile">soundfile</a> Python package, additional formats may be supported depending on your installed version of <a class="reference external" href="https://github.com/bastibe/python-soundfile">soundfile</a>. To see if additional formats are supported, run:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ldc-bpcsad -h</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>and check the <code class="docutils literal notranslate"><span class="pre">audio</span> <span class="pre">file</span> <span class="pre">formats</span></code> list at the end of the help message.</p>
+<p><strong>Supported formats:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">.aiff</span></code>, <code class="docutils literal notranslate"><span class="pre">.aif</span></code>  –  AIFF (Apple/SGI)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.au</span></code>, <code class="docutils literal notranslate"><span class="pre">.snd</span></code>  –  AU (Sun/NeXT)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.avr</span></code>  –  AVR (Audio Visual Research)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.caf</span></code>  –  CAF (Apple Core Audio File)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.flac</span></code>  –  FLAC (Free Lossless Audio Codec)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.htk</span></code>  –  HTK (HMM Tool Kit)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.iff</span></code> – IFF (Amiga IFF/SVX8/SV16)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.mat</span></code>, <code class="docutils literal notranslate"><span class="pre">.mat4</span></code>, <code class="docutils literal notranslate"><span class="pre">.mat5</span></code>  – Matlab 4.2/5.0 (GNU Octave 2.0/2.1)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.mpc</span></code>  –  Musepack MPC (Akai MPC 2k)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.ogg</span></code>, <code class="docutils literal notranslate"><span class="pre">.vorbis</span></code>  –  OGG Vorbis compressed audio</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.paf</span></code>, <code class="docutils literal notranslate"><span class="pre">.fap</span></code>  –  Ensoniq PARIS file format</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.pvf</span></code>  –  PVF (Portable Voice Format)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.rf64</span></code>  –  EBU RF64 enhancement of MBWF</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.sd2</span></code>  –  Sound Designer 2 format</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.sds</span></code>  –  MIDI Sample Dump Standard</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.sf</span></code>  –  IRCAM SDIF (Institut de Recherche et Coordination Acoustique/Musique Sound Description Interchange Format)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.sph</span></code>, <code class="docutils literal notranslate"><span class="pre">.nist</span></code>, <code class="docutils literal notranslate"><span class="pre">.wav</span></code>  –  NIST SPEHERE formatl SHORTEN compression is not supported</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.voc</span></code>  –  Sound Blaster VOC files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.w64</span></code>  –  Sonic Foundry 64-bit RIFF/WAV format</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.wav</span></code>  –  Microsoft .WAV RIFF format</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.wve</span></code>  –  Psion 8-bit A-law</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.xi</span></code>  –  Fasttracker 2 Extended Instrument format.</p></li>
+</ul>
+</section>
+<section id="debugging">
+<h2><a class="toc-backref" href="#id9" role="doc-backlink">Debugging</a><a class="headerlink" href="#debugging" title="Permalink to this heading"></a></h2>
+<p>When <a class="reference internal" href="#ldc-bpcsad"><span class="std std-ref">ldc-bpcsad</span></a> has a problem segmenting a file (e.g., bad file path, unsupported format, HTK error), it will log to STDERR that a problem was encountered and skip the file:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ldc-bpcsad --channel 1 --output-dir label_dir rec1.flac rec2.sph</span>
+<span class="go">SAD failed for channel 1 of &quot;rec2.sph&quot;. Skipping. For more details rerun with the --debug flag.</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>To troubleshoot precisely why a file was skipped, rerun with the <code class="docutils literal notranslate"><span class="pre">-debug</span></code> flag. This will enable debug mode, which produces <strong>MUCH</strong> more voluminous output including, among other items:</p>
+<ul class="simple">
+<li><p>whether or not the audio file exists and is in an understood format</p></li>
+<li><p>whether or not the selected channel exists on the audio file</p></li>
+<li><p>basic properties of audio file (e.g., format, number of channels, duration)</p></li>
+<li><p>any exceptions that arose during decoding</p></li>
+</ul>
+<p>E.g.:</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">ldc-bpcsad --debug --channel 1 --output-dir label_dir rec1.flac rec2.sph</span>
+
+<span class="go">SAD failed for channel 1 of &quot;rec1.flac&quot;. Skipping. For more details rerun with the --debug flag.</span>
+
+<span class="go">DEBUG: COMMAND LINE CALL: /usr/local/bin/ldc-bpcsad --debug --channel 1 --output-dir label_dir rec1.flac rec2.sph</span>
+<span class="go">DEBUG: Flag &quot;--n-jobs&quot; is ignored for debug mode. Using single-threaded implementation.</span>
+<span class="go">DEBUG: Progress bar is disabled for debug mode.</span>
+<span class="go">DEBUG:</span>
+<span class="go">DEBUG: ########################################################################</span>
+<span class="go">DEBUG: Attempting SAD.</span>
+<span class="go">DEBUG: ########################################################################</span>
+<span class="go">DEBUG: Source audio file: rec1.flac</span>
+<span class="go">samplerate: 16000 Hz</span>
+<span class="go">channels: 1</span>
+<span class="go">duration: 1e+01:4.000 min</span>
+<span class="go">format: FLAC (Free Lossless Audio Codec) [FLAC]</span>
+<span class="go">subtype: Signed 16 bit PCM [PCM_16]</span>
+<span class="go">endian: FILE</span>
+<span class="go">sections: 1</span>
+<span class="go">frames: 9664000</span>
+<span class="go">extra_info: &quot;&quot;&quot;</span>
+<span class="go">    File : rec1.flac</span>
+<span class="go">    Length : 6680195</span>
+<span class="go">    FLAC Stream Metadata</span>
+<span class="go">      Channels    : 1</span>
+<span class="go">      Sample rate : 16000</span>
+<span class="go">      Frames      : 9664000</span>
+<span class="go">      Bit width   : 16</span>
+<span class="go">      Vorbis Comment Metadata</span>
+<span class="go">        comment      : Processed by SoX</span>
+<span class="go">      End</span>
+<span class="go">      &quot;&quot;&quot;</span>
+<span class="go">DEBUG:</span>
+<span class="go">DEBUG: Source channel: 1.</span>
+<span class="go">DEBUG:</span>
+<span class="go">DEBUG: Decoding chunk: CHUNK_ONSET: 0.000, CHUNK_OFFSET: 604.000, CHUNK_DUR: 604.000</span>
+<span class="go">DEBUG: Saving SAD to &quot;label_dir/rec1.lab&quot;.</span>
+<span class="go">DEBUG: Output file format: htk.</span>
+<span class="go">DEBUG: ########################################################################</span>
+<span class="go">DEBUG: Attempting SAD.</span>
+<span class="go">DEBUG: ########################################################################</span>
+<span class="go">DEBUG: Error opening &#39;rec2.sph&#39;: File contains data in an unimplemented format.</span>
+<span class="go">DEBUG: To see supported formats, run:</span>
+<span class="go">DEBUG:</span>
+<span class="go">DEBUG:     ldc-bpcsad --help</span>
+<span class="go">WARNING: SAD failed for channel 1 of &quot;rec2.sph&quot;. Skipping. For more details rerun with the --debug flag.</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="usage">
+<span id="ldc-bpcsad"></span><h2><a class="toc-backref" href="#id10" role="doc-backlink">Usage</a><a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
+<p><p>Perform speech activity detection on audio files.</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">ldc</span><span class="o">-</span><span class="n">bpcsad</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">channel</span> <span class="n">CHAN</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">scp</span> <span class="n">SCP</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">scp</span><span class="o">-</span><span class="n">fmt</span> <span class="n">SCP</span><span class="o">-</span><span class="n">FMT</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">dir</span> <span class="n">OUTPUT</span><span class="o">-</span><span class="n">DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">fmt</span> <span class="n">OUTPUT</span><span class="o">-</span><span class="n">FMT</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">speech</span> <span class="n">SPEECH</span><span class="o">-</span><span class="n">DUR</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nonspeech</span> <span class="n">NONSPEECH</span><span class="o">-</span><span class="n">DUR</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">speech</span><span class="o">-</span><span class="n">scale</span><span class="o">-</span><span class="n">factor</span> <span class="n">SPEECH</span><span class="o">-</span><span class="n">SCALE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">disable</span><span class="o">-</span><span class="n">progress</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">debug</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">n</span><span class="o">-</span><span class="n">jobs</span> <span class="n">INT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">version</span><span class="p">]</span>
+                  <span class="p">[</span><span class="n">audio</span><span class="o">-</span><span class="n">path</span> <span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<section id="positional-arguments">
+<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h3>
+<dl class="option-list">
+<dt><kbd>audio-path</kbd></dt>
+<dd><p>audio files to be processed</p>
+</dd>
+</dl>
+</section>
+<section id="named-arguments">
+<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h3>
+<dl class="option-list">
+<dt><kbd>--channel</kbd></dt>
+<dd><p>channel (1-indexed) to process on each audio file (Default: 1)</p>
+<p>Default: 1</p>
+</dd>
+<dt><kbd>--scp</kbd></dt>
+<dd><p>path to script file (Default: None)</p>
+</dd>
+<dt><kbd>--scp-fmt</kbd></dt>
+<dd><p>Possible choices: htk, json</p>
+<p>script file format (Default: “htk”)</p>
+<p>Default: “htk”</p>
+</dd>
+<dt><kbd>--output-dir</kbd></dt>
+<dd><p>output segmentations to OUTPUT-DIR (Default: current directory)</p>
+<p>Default: /home/runner/work/ldc-bpcsad/ldc-bpcsad/docs</p>
+</dd>
+<dt><kbd>--output-fmt</kbd></dt>
+<dd><p>Possible choices: audacity, htk, rttm, textgrid</p>
+<p>output file format (Default: “htk”)</p>
+<p>Default: “htk”</p>
+</dd>
+<dt><kbd>--speech</kbd></dt>
+<dd><p>filter speech segments shorter than SPEECH-DUR seconds (Default: 0.5)</p>
+<p>Default: 0.5</p>
+</dd>
+<dt><kbd>--nonspeech</kbd></dt>
+<dd><p>merge speech segments separated by less than NONSPEECH-DUR seconds (Default: 0.3)</p>
+<p>Default: 0.3</p>
+</dd>
+<dt><kbd>--speech-scale-factor</kbd></dt>
+<dd><p>post-multiply speech model acoustic likelihoods by SPEECH-SCALE (Default: 1.0)</p>
+<p>Default: 1.0</p>
+</dd>
+<dt><kbd>--disable-progress</kbd></dt>
+<dd><p>disable progress bar</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--debug</kbd></dt>
+<dd><p>enable DEBUG mode</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--n-jobs, -j</kbd></dt>
+<dd><p>set num threads to use (Default: 1)</p>
+<p>Default: 1</p>
+</dd>
+<dt><kbd>--version</kbd></dt>
+<dd><p>show program’s version number and exit</p>
+</dd>
+</dl>
+</section>
+<p><p>audio file formats: AIFF (Apple/SGI), AU (Sun/NeXT), AVR (Audio Visual Research), CAF (Apple Core Audio File), FLAC (Free Lossless Audio Codec), HTK (HMM Tool Kit), IFF (Amiga IFF/SVX8/SV16), MAT4 (GNU Octave 2.0 / Matlab 4.2), MAT5 (GNU Octave 2.1 / Matlab 5.0), MPC (Akai MPC 2k), MPEG-1/2 Audio, OGG (OGG Container format), PAF (Ensoniq PARIS), PVF (Portable Voice Format), RAW (header-less), RF64 (RIFF 64), SD2 (Sound Designer II), SDS (Midi Sample Dump Standard), SF (Berkeley/IRCAM/CARL), VOC (Creative Labs), W64 (SoundFoundry WAVE 64), WAV (Microsoft), WAV (NIST Sphere), WAVEX (Microsoft), WVE (Psion Series 3), XI (FastTracker 2)</p>
+</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="model.html" class="btn btn-neutral float-left" title="SAD model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

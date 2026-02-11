@@ -1,0 +1,7 @@
+﻿:mod:`ldc_bpcsad.htk`.HViteConfig
+========================================
+
+.. currentmodule:: ldc_bpcsad.htk
+  
+.. autoclass:: HViteConfig
+  :members:

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ldc_bpcsad.segment &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+        <script src="../../_static/tabs.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">SAD model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">Command-line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ldc_bpcsad.segment</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ldc_bpcsad.segment</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) 2023, Trustees of the University of Pennsylvania</span>
+<span class="c1"># See LICENSE for licensing conditions</span>
+<span class="sd">&quot;&quot;&quot;Labeled segments.&quot;&quot;&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_dataclass_slots</span><span class="p">,</span> <span class="n">clip</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Segment&#39;</span><span class="p">]</span>
+
+
+<span class="c1"># Implementation inspired by pyannote.core.segment.</span>
+<div class="viewcode-block" id="Segment"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment">[docs]</a><span class="nd">@add_dataclass_slots</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">unsafe_hash</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Segment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Speech segment.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    onset : float</span>
+<span class="sd">        Onset of segment in seconds from beginning of recording.</span>
+
+<span class="sd">    offset : float</span>
+<span class="sd">        Offset of segment in seconds from beginning of recording.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">onset</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span>
+
+<div class="viewcode-block" id="Segment.gap"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment.gap">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">gap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return gap between segment and another segment.</span>
+
+<span class="sd">        If the two segments overlap, the gap will have duration &lt;= 0.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : Segment</span>
+<span class="sd">            Other segment.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Segment</span>
+<span class="sd">            Gap segment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">onset</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onset</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">onset</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Segment</span><span class="p">(</span><span class="n">onset</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Segment.union"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment.union">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">union</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return union of segments.</span>
+
+<span class="sd">        The union of a set of segments is defined as the minimal segment</span>
+<span class="sd">        containing each segment in the set.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : Segment</span>
+<span class="sd">            Other segment.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Segment</span>
+<span class="sd">            Union of the segments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="n">segs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="n">onset</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">onset</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">segs</span><span class="p">)</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">offset</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">segs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Segment</span><span class="p">(</span><span class="n">onset</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Segment.copy"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment.copy">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return deep copy of segment.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Segment</span><span class="p">(</span><span class="n">onset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">onset</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Segment.shift"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment.shift">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">shift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">in_place</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shift segment by `delta` seconds.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">in_place</span><span class="p">:</span>
+            <span class="bp">self</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">onset</span> <span class="o">+=</span> <span class="n">delta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">+=</span> <span class="n">delta</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="Segment.clip"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment.clip">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">clip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">,</span> <span class="n">in_place</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clip segment so that its onset/offset lay within [`lb`, `ub`].</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lb : float</span>
+<span class="sd">            Lowerbound of interval.</span>
+
+<span class="sd">        ub : float</span>
+<span class="sd">            Upperbound of interval.</span>
+
+<span class="sd">        in_place : bool, optional</span>
+<span class="sd">            If True, perform operation in place.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Segment</span>
+<span class="sd">            Clipped segment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">in_place</span><span class="p">:</span>
+            <span class="bp">self</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">onset</span> <span class="o">=</span> <span class="n">clip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onset</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">clip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="Segment.round"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment.round">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">in_place</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Round onset/offset to `precision` digits.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">in_place</span><span class="p">:</span>
+            <span class="bp">self</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">onset</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onset</span><span class="p">,</span> <span class="n">precision</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="n">precision</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="Segment.isclose"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment.isclose">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">isclose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-7</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True if onsets/offsets of segments are equal within a</span>
+<span class="sd">        tolerance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : Segment</span>
+<span class="sd">            Segment to compare with.</span>
+
+<span class="sd">        atol : float, optional</span>
+<span class="sd">            Times within `atol` seconds are considered close.</span>
+<span class="sd">            (Default: 1e-7)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onset</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">onset</span><span class="p">,</span> <span class="n">abs_tol</span><span class="o">=</span><span class="n">atol</span><span class="p">)</span> <span class="ow">and</span>
+                <span class="n">math</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="n">abs_tol</span><span class="o">=</span><span class="n">atol</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Segment.allclose"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment.allclose">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">allclose</span><span class="p">(</span><span class="n">lsegs</span><span class="p">,</span> <span class="n">rsegs</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-7</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True if two lists of segments are element-wise equal within a</span>
+<span class="sd">        tolerance.</span>
+
+<span class="sd">        Two segments are considered equal if their onsets/offsets are within</span>
+<span class="sd">        `atol` of each other.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lsegs, rsegs : Iterable[Segment]</span>
+<span class="sd">            Lists of segments to compare.</span>
+
+<span class="sd">        atol : float, optional</span>
+<span class="sd">            Times within `atol` seconds are considered close.</span>
+<span class="sd">            (Default: 1e-7)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lsegs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">lsegs</span><span class="p">)</span>
+        <span class="n">rsegs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">rsegs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">lsegs</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">rsegs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">lseg</span><span class="p">,</span> <span class="n">rseg</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lsegs</span><span class="p">,</span> <span class="n">rsegs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">lseg</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">rseg</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Segment.merge_segs"><a class="viewcode-back" href="../../generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment.merge_segs">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge_segs</span><span class="p">(</span><span class="n">segs</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">is_sorted</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge segments.</span>
+
+<span class="sd">        Produces a new segmentation from `segs` by:</span>
+
+<span class="sd">        - merging overlapping segments</span>
+<span class="sd">        - merging segments separated by &lt;= `thresh` seconds.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        segs : Iterable[Segment]</span>
+<span class="sd">            Segments to be merged.</span>
+
+<span class="sd">        thresh : float, optional</span>
+<span class="sd">            Tolerance for merging. Segments separated by &lt;= `thresh` seconds</span>
+<span class="sd">            will be merged.</span>
+<span class="sd">            (Default: 0.0)</span>
+
+<span class="sd">        is_sorted : bool, optional</span>
+<span class="sd">            If True, treat `segs` as already sorted. Otherwise, sort before</span>
+<span class="sd">            performing mergers.</span>
+<span class="sd">            (Default: False)</span>
+
+<span class="sd">        copy : bool, optional</span>
+<span class="sd">            If True, create copy of `segs` and perform merger on this copy.</span>
+<span class="sd">            (Default: True)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        List[Segment]</span>
+<span class="sd">            Merged segments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">segs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
+            <span class="n">segs</span> <span class="o">=</span> <span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">segs</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_sorted</span><span class="p">:</span>
+            <span class="n">segs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">segs</span><span class="p">)</span>
+
+        <span class="c1"># Perform merger.</span>
+        <span class="n">merged_segs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">curr_seg</span> <span class="o">=</span> <span class="n">segs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">segs</span><span class="p">:</span>
+            <span class="n">gap</span> <span class="o">=</span> <span class="n">curr_seg</span> <span class="o">^</span> <span class="n">seg</span>
+            <span class="k">if</span> <span class="n">gap</span><span class="o">.</span><span class="n">duration</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">:</span>
+                <span class="n">merged_segs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr_seg</span><span class="p">)</span>
+                <span class="n">curr_seg</span> <span class="o">=</span> <span class="n">seg</span>
+            <span class="n">curr_seg</span> <span class="o">=</span> <span class="n">curr_seg</span> <span class="o">|</span> <span class="n">seg</span>
+        <span class="n">merged_segs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr_seg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">merged_segs</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Segment duration in seconds.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">onset</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Unpack segment for easy interoperability with tuples.</span>
+
+<span class="sd">        &gt;&gt;&gt; seg = Segment(0.1, 0.5)</span>
+<span class="sd">        &gt;&gt;&gt; onset, offset = seg</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">onset</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__xor__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gap</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

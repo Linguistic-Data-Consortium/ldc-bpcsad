@@ -1,0 +1,7 @@
+﻿:mod:`ldc_bpcsad.decode`.DecodingError
+=============================================
+
+.. currentmodule:: ldc_bpcsad.decode
+  
+.. autoclass:: DecodingError
+  :members:

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ldc_bpcsad.segment.Segment &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ldc_bpcsad.decode.decode" href="ldc_bpcsad.decode.decode.html" />
+    <link rel="prev" title="API Reference" href="../api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model.html">SAD model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command-line tool</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#data-structures">Data structures</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.segment</span></code>.Segment</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ldc_bpcsad.segment.Segment"><code class="docutils literal notranslate"><span class="pre">Segment</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#decoding">Decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#htk-wrappers">HTK wrappers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#io">IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#utilities">Utilities</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.segment</span></code>.Segment</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/ldc_bpcsad.segment.Segment.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ldc-bpcsad-segment-segment">
+<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.segment</span></code>.Segment<a class="headerlink" href="#ldc-bpcsad-segment-segment" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ldc_bpcsad.segment.</span></span><span class="sig-name descname"><span class="pre">Segment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">onset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment" title="Permalink to this definition"></a></dt>
+<dd><p>Speech segment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>onset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Onset of segment in seconds from beginning of recording.</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Offset of segment in seconds from beginning of recording.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.allclose">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">allclose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lsegs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rsegs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-07</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment.allclose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment.allclose" title="Permalink to this definition"></a></dt>
+<dd><p>Return True if two lists of segments are element-wise equal within a
+tolerance.</p>
+<p>Two segments are considered equal if their onsets/offsets are within
+<cite>atol</cite> of each other.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lsegs</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment"><em>Segment</em></a><em>]</em>) – Lists of segments to compare.</p></li>
+<li><p><strong>rsegs</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment"><em>Segment</em></a><em>]</em>) – Lists of segments to compare.</p></li>
+<li><p><strong>atol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Times within <cite>atol</cite> seconds are considered close.
+(Default: 1e-7)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.clip">
+<span class="sig-name descname"><span class="pre">clip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ub</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_place</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment.clip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment.clip" title="Permalink to this definition"></a></dt>
+<dd><p>Clip segment so that its onset/offset lay within [<cite>lb</cite>, <cite>ub</cite>].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lb</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Lowerbound of interval.</p></li>
+<li><p><strong>ub</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Upperbound of interval.</p></li>
+<li><p><strong>in_place</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, perform operation in place.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Clipped segment.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment">Segment</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment.copy" title="Permalink to this definition"></a></dt>
+<dd><p>Return deep copy of segment.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.duration">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">duration</span></span><a class="headerlink" href="#ldc_bpcsad.segment.Segment.duration" title="Permalink to this definition"></a></dt>
+<dd><p>Segment duration in seconds.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.gap">
+<span class="sig-name descname"><span class="pre">gap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment.gap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment.gap" title="Permalink to this definition"></a></dt>
+<dd><p>Return gap between segment and another segment.</p>
+<p>If the two segments overlap, the gap will have duration &lt;= 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment"><em>Segment</em></a>) – Other segment.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Gap segment.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment">Segment</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.isclose">
+<span class="sig-name descname"><span class="pre">isclose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-07</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment.isclose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment.isclose" title="Permalink to this definition"></a></dt>
+<dd><p>Return True if onsets/offsets of segments are equal within a
+tolerance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>other</strong> (<a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment"><em>Segment</em></a>) – Segment to compare with.</p></li>
+<li><p><strong>atol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Times within <cite>atol</cite> seconds are considered close.
+(Default: 1e-7)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.merge_segs">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">merge_segs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">segs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_sorted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment.merge_segs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment.merge_segs" title="Permalink to this definition"></a></dt>
+<dd><p>Merge segments.</p>
+<p>Produces a new segmentation from <cite>segs</cite> by:</p>
+<ul class="simple">
+<li><p>merging overlapping segments</p></li>
+<li><p>merging segments separated by &lt;= <cite>thresh</cite> seconds.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>segs</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment"><em>Segment</em></a><em>]</em>) – Segments to be merged.</p></li>
+<li><p><strong>thresh</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Tolerance for merging. Segments separated by &lt;= <cite>thresh</cite> seconds
+will be merged.
+(Default: 0.0)</p></li>
+<li><p><strong>is_sorted</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, treat <cite>segs</cite> as already sorted. Otherwise, sort before
+performing mergers.
+(Default: False)</p></li>
+<li><p><strong>copy</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, create copy of <cite>segs</cite> and perform merger on this copy.
+(Default: True)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Merged segments.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment">Segment</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.round">
+<span class="sig-name descname"><span class="pre">round</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_place</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment.round"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment.round" title="Permalink to this definition"></a></dt>
+<dd><p>Round onset/offset to <cite>precision</cite> digits.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.shift">
+<span class="sig-name descname"><span class="pre">shift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_place</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment.shift"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment.shift" title="Permalink to this definition"></a></dt>
+<dd><p>Shift segment by <cite>delta</cite> seconds.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ldc_bpcsad.segment.Segment.union">
+<span class="sig-name descname"><span class="pre">union</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ldc_bpcsad/segment.html#Segment.union"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ldc_bpcsad.segment.Segment.union" title="Permalink to this definition"></a></dt>
+<dd><p>Return union of segments.</p>
+<p>The union of a set of segments is defined as the minimal segment
+containing each segment in the set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment"><em>Segment</em></a>) – Other segment.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Union of the segments.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment">Segment</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../api.html" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ldc_bpcsad.decode.decode.html" class="btn btn-neutral float-right" title="ldc_bpcsad.decode.decode" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

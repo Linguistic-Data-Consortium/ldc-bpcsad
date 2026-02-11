@@ -1,0 +1,6 @@
+﻿:mod:`ldc_bpcsad.io`.write_rttm_file
+=================================================
+
+.. currentmodule:: ldc_bpcsad.io
+
+.. autofunction:: write_rttm_file

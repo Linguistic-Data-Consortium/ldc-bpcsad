@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Reference &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ldc_bpcsad.segment.Segment" href="generated/ldc_bpcsad.segment.Segment.html" />
+    <link rel="prev" title="Command-line tool" href="cli.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">SAD model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command-line tool</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#data-structures">Data structures</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.segment.Segment.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.segment</span></code>.Segment</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#decoding">Decoding</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.decode.decode.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.decode</span></code>.decode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.decode.DecodingError.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.decode</span></code>.DecodingError</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#htk-wrappers">HTK wrappers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.htk.hvite.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.htk</span></code>.hvite</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.htk.write_hmmdefs.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.htk</span></code>.write_hmmdefs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.htk.HViteConfig.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.htk</span></code>.HViteConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.htk.HTKError.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.htk</span></code>.HTKError</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#io">IO</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.io.load_audacity_label_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.load_audacity_label_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.io.write_audacity_label_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.write_audacity_label_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.io.load_htk_label_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.load_htk_label_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.io.write_htk_label_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.write_htk_label_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.io.load_rttm_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.load_rttm_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.io.write_rttm_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.write_rttm_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.io.write_textgrid_file.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.io</span></code>.write_textgrid_file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#utilities">Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.utils.add_dataclass_slots.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.utils</span></code>.add_dataclass_slots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.utils.clip.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.utils</span></code>.clip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.utils.resample.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.utils</span></code>.resample</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/ldc_bpcsad.utils.which.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ldc_bpcsad.utils</span></code>.which</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this heading"></a></h1>
+<section id="data-structures">
+<h2>Data structures<a class="headerlink" href="#data-structures" title="Permalink to this heading"></a></h2>
+<p>Data structures used to represent speech segments.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.segment.Segment.html#ldc_bpcsad.segment.Segment" title="ldc_bpcsad.segment.Segment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">segment.Segment</span></code></a>(onset, offset)</p></td>
+<td><p>Speech segment.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="decoding">
+<h2>Decoding<a class="headerlink" href="#decoding" title="Permalink to this heading"></a></h2>
+<p>Functions and classes used to perform SAD on a waveform.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.decode.decode.html#ldc_bpcsad.decode.decode" title="ldc_bpcsad.decode.decode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decode.decode</span></code></a>(x, sr[, min_speech_dur, ...])</p></td>
+<td><p>Perform speech activity detection an audio signal.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/ldc_bpcsad.decode.DecodingError.html#ldc_bpcsad.decode.DecodingError" title="ldc_bpcsad.decode.DecodingError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decode.DecodingError</span></code></a></p></td>
+<td><p>Error segmenting file.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="htk-wrappers">
+<h2>HTK wrappers<a class="headerlink" href="#htk-wrappers" title="Permalink to this heading"></a></h2>
+<p>Functions wrapping HTK command line tools.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.htk.hvite.html#ldc_bpcsad.htk.hvite" title="ldc_bpcsad.htk.hvite"><code class="xref py py-obj docutils literal notranslate"><span class="pre">htk.hvite</span></code></a>(wav_path, config, working_dir)</p></td>
+<td><p>Perform Viterbi decoding for WAV file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/ldc_bpcsad.htk.write_hmmdefs.html#ldc_bpcsad.htk.write_hmmdefs" title="ldc_bpcsad.htk.write_hmmdefs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">htk.write_hmmdefs</span></code></a>(old_hmmdefs_path, ...[, ...])</p></td>
+<td><p>Modify an HTK hmmdefs file in which speech model acoustic likelihoods are scaled by <code class="docutils literal notranslate"><span class="pre">speech_scale_factor</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.htk.HViteConfig.html#ldc_bpcsad.htk.HViteConfig" title="ldc_bpcsad.htk.HViteConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">htk.HViteConfig</span></code></a>(slf_path, hmmdefs_path, ...)</p></td>
+<td><p>HVite decoding configuration</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/ldc_bpcsad.htk.HTKError.html#ldc_bpcsad.htk.HTKError" title="ldc_bpcsad.htk.HTKError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">htk.HTKError</span></code></a></p></td>
+<td><p>Call to HTK command line tool failed.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="io">
+<h2>IO<a class="headerlink" href="#io" title="Permalink to this heading"></a></h2>
+<p>Functions for reading/writing segmentatins to files.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.io.load_audacity_label_file.html#ldc_bpcsad.io.load_audacity_label_file" title="ldc_bpcsad.io.load_audacity_label_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">io.load_audacity_label_file</span></code></a>(fpath[, ...])</p></td>
+<td><p>Load speech segments from Audacity label file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/ldc_bpcsad.io.write_audacity_label_file.html#ldc_bpcsad.io.write_audacity_label_file" title="ldc_bpcsad.io.write_audacity_label_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">io.write_audacity_label_file</span></code></a>(fpath, segs[, ...])</p></td>
+<td><p>Write speech segments to Audacity label file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.io.load_htk_label_file.html#ldc_bpcsad.io.load_htk_label_file" title="ldc_bpcsad.io.load_htk_label_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">io.load_htk_label_file</span></code></a>(fpath[, ...])</p></td>
+<td><p>Load speech segments from HTK label file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/ldc_bpcsad.io.write_htk_label_file.html#ldc_bpcsad.io.write_htk_label_file" title="ldc_bpcsad.io.write_htk_label_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">io.write_htk_label_file</span></code></a>(fpath, segs[, ...])</p></td>
+<td><p>Write speech segments to HTK label file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.io.load_rttm_file.html#ldc_bpcsad.io.load_rttm_file" title="ldc_bpcsad.io.load_rttm_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">io.load_rttm_file</span></code></a>(fpath)</p></td>
+<td><p>Load speech segments from Rich Transcription Time Marked (RTTM) file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/ldc_bpcsad.io.write_rttm_file.html#ldc_bpcsad.io.write_rttm_file" title="ldc_bpcsad.io.write_rttm_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">io.write_rttm_file</span></code></a>(rttm_path, segs, file_id)</p></td>
+<td><p>Write speech segments to Rich Transcription Time Marked (RTTM) file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.io.write_textgrid_file.html#ldc_bpcsad.io.write_textgrid_file" title="ldc_bpcsad.io.write_textgrid_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">io.write_textgrid_file</span></code></a>(fpath, segs[, tier, ...])</p></td>
+<td><p>Write speech segments to Praat TextGrid file.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="utilities">
+<h2>Utilities<a class="headerlink" href="#utilities" title="Permalink to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.utils.add_dataclass_slots.html#ldc_bpcsad.utils.add_dataclass_slots" title="ldc_bpcsad.utils.add_dataclass_slots"><code class="xref py py-obj docutils literal notranslate"><span class="pre">utils.add_dataclass_slots</span></code></a>(cls)</p></td>
+<td><p>Add <cite>__slots__</cite> to a data class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/ldc_bpcsad.utils.clip.html#ldc_bpcsad.utils.clip" title="ldc_bpcsad.utils.clip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">utils.clip</span></code></a>(x, lb, ub)</p></td>
+<td><p>Clip <cite>x</cite> to interval [<cite>lb</cite>, <cite>ub</cite>].</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/ldc_bpcsad.utils.resample.html#ldc_bpcsad.utils.resample" title="ldc_bpcsad.utils.resample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">utils.resample</span></code></a>(x, orig_sr, new_sr)</p></td>
+<td><p>Resample audio from <cite>orig_sr</cite> to <cite>new_sr</cite> Hz.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/ldc_bpcsad.utils.which.html#ldc_bpcsad.utils.which" title="ldc_bpcsad.utils.which"><code class="xref py py-obj docutils literal notranslate"><span class="pre">utils.which</span></code></a>(program[, search_dirs])</p></td>
+<td><p>Returns path to excutable <cite>program</cite>.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cli.html" class="btn btn-neutral float-left" title="Command-line tool" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="generated/ldc_bpcsad.segment.Segment.html" class="btn btn-neutral float-right" title="ldc_bpcsad.segment.Segment" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

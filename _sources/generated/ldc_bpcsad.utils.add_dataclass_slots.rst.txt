@@ -1,0 +1,6 @@
+﻿:mod:`ldc_bpcsad.utils`.add_dataclass_slots
+========================================================
+
+.. currentmodule:: ldc_bpcsad.utils
+
+.. autofunction:: add_dataclass_slots

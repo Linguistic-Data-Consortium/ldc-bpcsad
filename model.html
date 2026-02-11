@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SAD model &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Command-line tool" href="cli.html" />
+    <link rel="prev" title="Installation" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">SAD model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#training">Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance">Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command-line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">SAD model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sad-model">
+<h1>SAD model<a class="headerlink" href="#sad-model" title="Permalink to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p><cite>ldc-bpcsad</cite> performs speech activity detection (SAD) as a byproduct of broad phonetic class (BPC) recognition <span id="id1">[<a class="reference internal" href="#id8" title="Andrew K Halberstadt and James R Glass. Heterogeneous acoustic measurements for phonetic classification. In EUROSPEECH. 1997. URL: https://www.isca-speech.org/archive_v0/archive_papers/eurospeech_1997/e97_0401.pdf.">3</a>, <a class="reference internal" href="#id10" title="Tara N Sainath, Dimitri Kanevsky, and Bhuvana Ramabhadran. Broad phonetic class recognition in a hidden markov model framework using extended baum-welch transformations. In ASRU, 306–311. IEEE, 2007. URL: https://ieeexplore.ieee.org/abstract/document/4430129.">7</a>, <a class="reference internal" href="#id11" title="Tara N Sainath and Victor Zue. A comparison of broad phonetic and acoustic units for noise robust segment-based phonetic recognition. In INTERSPEECH. 2008. URL: https://www.isca-speech.org/archive_v0/archive_papers/interspeech_2008/i08_2378.pdf.">8</a>, <a class="reference internal" href="#id9" title="Patricia Scanlon, Daniel PW Ellis, and Richard B Reilly. Using broad phonetic group experts for improved speech recognition. IEEE transactions on audio, speech, and language processing, 15(3):803–812, 2007. URL: https://ieeexplore.ieee.org/abstract/document/4100697.">9</a>]</span>. The speech signal is run through a GMM-HMM based recognizer trained to recognize 5 broad phonetic classes: vowel, stops/affricate, fricative, nasal, and glide/liquid. Each contiguous sequence of BPCs is merged into a single speech segment and this segmentation smoothed to eliminate spurious short pauses. Input features are 13-D PLP features + first and second differences, extracted using a 20-channel filterbank covering 80 Hz to 4 kHz.</p>
+<p>The system is implemented using <a class="reference external" href="https://htk.eng.cam.ac.uk/">Hidden Markov Model Toolkit (HTK)</a> <span id="id2">[<a class="reference internal" href="#id13" title="Steve Young, Gunnar Evermann, Mark Gales, Thomas Hain, Dan Kershaw, Xunying Liu, Gareth Moore, Julian Odell, Dave Ollason, Dan Povey, and others. The HTK Book. Cambridge University Engineering Department, Cambridge, UK, 2002. URL: https://ai.stanford.edu/~amaas/data/htkbook.pdf.">10</a>]</span>.</p>
+</section>
+<section id="training">
+<h2>Training<a class="headerlink" href="#training" title="Permalink to this heading"></a></h2>
+<p>The GMM and HMM transition parameters were trained using the phonetically transcribed portions of <a class="reference external" href="https://buckeyecorpus.osu.edu/">Buckeye Corpus</a> <span id="id3">[<a class="reference internal" href="#id12" title="Mark Pitt, Laura Dilley, Keith Johnson, Scott Kiesling, William Raymond, Elizabeth Hume, and Eric Fosler-Lussier. Buckeye Corpus of Conversational Speech (2nd release). Department of Psychology, Ohio State University (Distributor), Columbus, OH, 2007. URL: www.buckeyecorpus.osu.edu.">4</a>]</span> with the following mapping from the <a class="reference external" href="https://buckeyecorpus.osu.edu/BuckeyeCorpusmanual.pdf">Buckeye phoneset</a> to broad phonetic classes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Vowel</span></code>: aa, aan, ae, aen, ah, ahn, ao, aon, aw, awn, ay, ayn, eh, ehn, ey, eyn, ih, ihn, iy, iyn, ow, own, oy, oyn, uh, uhn, uw, uwn</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Stop/affricate</span></code>: p, t, k, tq, b, d, g, ch, jh, dx, nx</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Fricative</span></code>: f, th, s, sh, v, dh, z, zh, hh</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Nasal</span></code>: em, m, en, n, eng, ng</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Glide/liquid</span></code>: el, l, er, r, w, y</p></li>
+</ul>
+<p>All other sounds were mapped to non-speech. This includes silence and environmental noise as well as non-speech vocalizations such as laughter, breaths, and coughs.</p>
+</section>
+<section id="performance">
+<h2>Performance<a class="headerlink" href="#performance" title="Permalink to this heading"></a></h2>
+<p>Below, we present SAD performance on the <a class="reference external" href="https://dihardchallenge.github.io/dihard3/">DIHARD III</a> <span id="id4">[<a class="reference internal" href="#id16" title="Neville Ryant, Kenneth Church, Christopher Cieri, Jun Du, Sriram Ganapathy, and Mark Liberman. Third DIHARD Challenge Evaluation Plan. arXiv preprint arXiv:2006.05815, 2020. URL: https://arxiv.org/abs/2006.05815.">5</a>, <a class="reference internal" href="#id17" title="Neville Ryant, Prachi Singh, Venkat Krishnamohan, Rajat Varma, Kenneth Church, Christopher Cieri, Jun Du, Sriram Ganapathy, and Mark Liberman. The Third DIHARD Diarization Challenge. In INTERSPEECH. 2021. URL: https://arxiv.org/abs/2006.05815.">6</a>]</span> eval set, both overall and by domain:</p>
+<blockquote>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>domain                 accuracy    precision    recall     f1    der    dcf    fa rate    miss rate
+-------------------  ----------  -----------  --------  -----  -----  -----  ---------  -----------
+audiobooks                96.02        96.99     97.92  97.45   5.12   4.20      10.55         2.08
+broadcast_interview       94.18        96.49     95.98  96.23   7.52   6.01      11.99         4.02
+clinical                  88.23        90.85     90.01  90.43  19.05  11.15      14.63         9.99
+court                     94.68        96.33     97.31  96.82   6.40   6.58      18.25         2.69
+cts                       94.16        97.83     95.57  96.69   6.55   7.65      17.30         4.43
+maptask                   91.87        91.39     96.46  93.86  12.63   6.77      16.43         3.54
+meeting                   81.53        98.52     78.71  87.51  22.47  17.33       5.46        21.29
+restaurant                57.09        98.46     52.11  68.15  48.70  37.43       6.05        47.89
+socio_field               86.54        97.73     84.61  90.70  17.35  13.24       6.79        15.39
+socio_lab                 90.58        96.37     91.03  93.62  12.40   9.44      10.84         8.97
+webvideo                  76.73        90.49     76.21  82.74  31.80  23.31      21.85        23.79
+OVERALL                   88.52        96.02     89.18  92.48  14.51  11.61      13.98        10.82
+</pre></div>
+</div>
+</div></blockquote>
+<p>For domains containing generally clean recording conditions, high SNR, and low degree of speaker overlap, performance is good with DER generally &lt;10%. In the presence of substantial overlapped speech, low SNR, or challenging environmental conditions, performance degrades. This is particularly noticeable for YouTube recordings (<code class="docutils literal notranslate"><span class="pre">webvideo</span></code> domain) and speech recorded in restaurants (<code class="docutils literal notranslate"><span class="pre">restaurant</span></code>). In the latter environment, DER rises to nearly 50%. Across all domains, performance is worse than <a class="reference external" href="https://github.com/dihardchallenge/dihard3_baseline#sad-scoring">state-of-the-art</a> for this test set with deltas ranging from 1.88% DER (broadcast interview) to 31.56% (restaurant).</p>
+<p>Full explanation of table columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">domain</span></code>  –  DIHARD III recording domain; overall results reported under <code class="docutils literal notranslate"><span class="pre">OVERALL</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">accuracy</span></code>  –  % total duration correctly classified</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">precision</span></code>  –  % detected speech that is speech according to the reference segmentation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">recall</span></code>  –  % speech in the reference segmentation that was detected</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">f1</span></code>  –  F1 (computed from <code class="docutils literal notranslate"><span class="pre">precision</span></code>/<code class="docutils literal notranslate"><span class="pre">recall</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">der</span></code>  –  detection error rate (DER) <span id="id5">[<a class="reference internal" href="#id15" title="Hervé Bredin. Pyannote.metrics: a toolkit for reproducible evaluation, diagnostic, and error analysis of speaker diarization systems. In INTERSPEECH, 3587–3591. 2017. URL: http://herve.niderb.fr/download/pdfs/Bredin2017a.pdf.">1</a>]</span></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dcf</span></code>  –  detection cost function (DCF) <span id="id6">[<a class="reference internal" href="#id14" title="Frederick R. Byers. NIST Open Speech Analytic Technologies 2019 Evaluation Plan (OpenSAT19). 2018. URL: https://www.nist.gov/system/files/documents/2018/11/05/opensat19_evaluation_plan_v2_11-5-18.pdf.">2</a>]</span>; weighted function of <code class="docutils literal notranslate"><span class="pre">fa</span> <span class="pre">rate</span></code> and <code class="docutils literal notranslate"><span class="pre">miss</span> <span class="pre">rate</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fa</span> <span class="pre">rate</span></code>  –  % non-speech incorrectly detected as speech</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">miss</span> <span class="pre">rate</span></code> –  % speech that was not detected</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
+<div class="docutils container" id="id7">
+<div class="citation" id="id15" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">1</a><span class="fn-bracket">]</span></span>
+<p>Hervé Bredin. Pyannote.metrics: a toolkit for reproducible evaluation, diagnostic, and error analysis of speaker diarization systems. In <em>INTERSPEECH</em>, 3587–3591. 2017. URL: <a class="reference external" href="http://herve.niderb.fr/download/pdfs/Bredin2017a.pdf">http://herve.niderb.fr/download/pdfs/Bredin2017a.pdf</a>.</p>
+</div>
+<div class="citation" id="id14" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">2</a><span class="fn-bracket">]</span></span>
+<p>Frederick R. Byers. NIST Open Speech Analytic Technologies 2019 Evaluation Plan (OpenSAT19). 2018. URL: <a class="reference external" href="https://www.nist.gov/system/files/documents/2018/11/05/opensat19_evaluation_plan_v2_11-5-18.pdf">https://www.nist.gov/system/files/documents/2018/11/05/opensat19_evaluation_plan_v2_11-5-18.pdf</a>.</p>
+</div>
+<div class="citation" id="id8" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">3</a><span class="fn-bracket">]</span></span>
+<p>Andrew K Halberstadt and James R Glass. Heterogeneous acoustic measurements for phonetic classification. In <em>EUROSPEECH</em>. 1997. URL: <a class="reference external" href="https://www.isca-speech.org/archive_v0/archive_papers/eurospeech_1997/e97_0401.pdf">https://www.isca-speech.org/archive_v0/archive_papers/eurospeech_1997/e97_0401.pdf</a>.</p>
+</div>
+<div class="citation" id="id12" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">4</a><span class="fn-bracket">]</span></span>
+<p>Mark Pitt, Laura Dilley, Keith Johnson, Scott Kiesling, William Raymond, Elizabeth Hume, and Eric Fosler-Lussier. <em>Buckeye Corpus of Conversational Speech (2nd release)</em>. Department of Psychology, Ohio State University (Distributor), Columbus, OH, 2007. URL: <a class="reference external" href="www.buckeyecorpus.osu.edu">www.buckeyecorpus.osu.edu</a>.</p>
+</div>
+<div class="citation" id="id16" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">5</a><span class="fn-bracket">]</span></span>
+<p>Neville Ryant, Kenneth Church, Christopher Cieri, Jun Du, Sriram Ganapathy, and Mark Liberman. Third DIHARD Challenge Evaluation Plan. <em>arXiv preprint arXiv:2006.05815</em>, 2020. URL: <a class="reference external" href="https://arxiv.org/abs/2006.05815">https://arxiv.org/abs/2006.05815</a>.</p>
+</div>
+<div class="citation" id="id17" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">6</a><span class="fn-bracket">]</span></span>
+<p>Neville Ryant, Prachi Singh, Venkat Krishnamohan, Rajat Varma, Kenneth Church, Christopher Cieri, Jun Du, Sriram Ganapathy, and Mark Liberman. The Third DIHARD Diarization Challenge. In <em>INTERSPEECH</em>. 2021. URL: <a class="reference external" href="https://arxiv.org/abs/2006.05815">https://arxiv.org/abs/2006.05815</a>.</p>
+</div>
+<div class="citation" id="id10" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">7</a><span class="fn-bracket">]</span></span>
+<p>Tara N Sainath, Dimitri Kanevsky, and Bhuvana Ramabhadran. Broad phonetic class recognition in a hidden markov model framework using extended baum-welch transformations. In <em>ASRU</em>, 306–311. IEEE, 2007. URL: <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/4430129">https://ieeexplore.ieee.org/abstract/document/4430129</a>.</p>
+</div>
+<div class="citation" id="id11" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">8</a><span class="fn-bracket">]</span></span>
+<p>Tara N Sainath and Victor Zue. A comparison of broad phonetic and acoustic units for noise robust segment-based phonetic recognition. In <em>INTERSPEECH</em>. 2008. URL: <a class="reference external" href="https://www.isca-speech.org/archive_v0/archive_papers/interspeech_2008/i08_2378.pdf">https://www.isca-speech.org/archive_v0/archive_papers/interspeech_2008/i08_2378.pdf</a>.</p>
+</div>
+<div class="citation" id="id9" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">9</a><span class="fn-bracket">]</span></span>
+<p>Patricia Scanlon, Daniel PW Ellis, and Richard B Reilly. Using broad phonetic group experts for improved speech recognition. <em>IEEE transactions on audio, speech, and language processing</em>, 15(3):803–812, 2007. URL: <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/4100697">https://ieeexplore.ieee.org/abstract/document/4100697</a>.</p>
+</div>
+<div class="citation" id="id13" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">10</a><span class="fn-bracket">]</span></span>
+<p>Steve Young, Gunnar Evermann, Mark Gales, Thomas Hain, Dan Kershaw, Xunying Liu, Gareth Moore, Julian Odell, Dave Ollason, Dan Povey, and others. <em>The HTK Book</em>. Cambridge University Engineering Department, Cambridge, UK, 2002. URL: <a class="reference external" href="https://ai.stanford.edu/~amaas/data/htkbook.pdf">https://ai.stanford.edu/~amaas/data/htkbook.pdf</a>.</p>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="install.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cli.html" class="btn btn-neutral float-right" title="Command-line tool" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

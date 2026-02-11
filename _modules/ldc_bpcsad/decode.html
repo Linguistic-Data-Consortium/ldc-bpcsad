@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ldc_bpcsad.decode &mdash; ldc-bpcsad 2.0-rc2+51.g830b97e documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/tabs.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+        <script src="../../_static/tabs.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ldc-bpcsad
+          </a>
+              <div class="version">
+                2.0-rc2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">SAD model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">Command-line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ldc-bpcsad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ldc_bpcsad.decode</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ldc_bpcsad.decode</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) 2023, Trustees of the University of Pennsylvania</span>
+<span class="c1"># See LICENSE for licensing conditions</span>
+<span class="sd">&quot;&quot;&quot;Functions for segmenting recordings.&quot;&quot;&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">soundfile</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sf</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.htk</span><span class="w"> </span><span class="kn">import</span> <span class="n">hvite</span><span class="p">,</span> <span class="n">write_hmmdefs</span><span class="p">,</span> <span class="n">HTKSegfault</span><span class="p">,</span> <span class="n">HViteConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_htk_label_file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">getLogger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.segment</span><span class="w"> </span><span class="kn">import</span> <span class="n">Segment</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">resample</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;decode&#39;</span><span class="p">]</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">()</span>
+
+
+<span class="n">THIS_DIR</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+
+<span class="c1"># Model directory for pre-trained model.</span>
+<span class="n">MODEL_DIR</span> <span class="o">=</span> <span class="n">THIS_DIR</span> <span class="o">/</span> <span class="s1">&#39;model&#39;</span>
+
+<span class="c1"># Names of phones corresponding to broad phonetic classes.</span>
+<span class="n">SPEECH_PHONES</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;f&#39;</span><span class="p">,</span>  <span class="c1"># Fricative.</span>
+                 <span class="s1">&#39;g&#39;</span><span class="p">,</span>  <span class="c1"># Glide/liquid.</span>
+                 <span class="s1">&#39;n&#39;</span><span class="p">,</span>  <span class="c1"># Nasal.</span>
+                 <span class="s1">&#39;s&#39;</span><span class="p">,</span>  <span class="c1"># Stop/affricate.</span>
+                 <span class="s1">&#39;v&#39;</span><span class="p">,</span>  <span class="c1"># Vowel.</span>
+                 <span class="p">]</span>
+
+
+<div class="viewcode-block" id="DecodingError"><a class="viewcode-back" href="../../generated/ldc_bpcsad.decode.DecodingError.html#ldc_bpcsad.decode.DecodingError">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">DecodingError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error segmenting file.&quot;&quot;&quot;</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_decode_chunk</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">ei</span><span class="p">,</span> <span class="n">min_chunk_len</span><span class="p">,</span> <span class="n">hvite_config</span><span class="p">,</span> <span class="n">silent</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform speech activity detection for chunk of an audio signal.</span>
+
+<span class="sd">    Decodes the chunk ``x[bi:ei)``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : numpy.ndarray (n_samples)</span>
+<span class="sd">        Audio samples.</span>
+
+<span class="sd">    sr : int</span>
+<span class="sd">        Sample rate (Hz).</span>
+
+<span class="sd">    bi : int</span>
+<span class="sd">        Index of first sample of chunk.</span>
+
+<span class="sd">    ei : int</span>
+<span class="sd">        Index of last sample of chunk.</span>
+
+<span class="sd">    min_chunk_len : int</span>
+<span class="sd">        Minimum size of chunk in samples.</span>
+
+<span class="sd">    hvite_config : HViteConfig</span>
+<span class="sd">        Decoder configuration.</span>
+
+<span class="sd">    silent: bool, optional</span>
+<span class="sd">        If True, suppress all logging messages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Convert from samples to seconds for more human-readable exceptions and</span>
+    <span class="c1"># logging.</span>
+    <span class="n">rec_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">chunk_len</span> <span class="o">=</span> <span class="n">ei</span> <span class="o">-</span> <span class="n">bi</span>
+    <span class="n">chunk_onset</span> <span class="o">=</span> <span class="n">bi</span> <span class="o">/</span> <span class="n">sr</span>
+    <span class="n">chunk_offset</span> <span class="o">=</span> <span class="n">ei</span> <span class="o">/</span> <span class="n">sr</span>
+    <span class="n">chunk_dur</span> <span class="o">=</span> <span class="n">chunk_len</span> <span class="o">/</span> <span class="n">sr</span>
+
+    <span class="c1"># Base case: Chunk length &lt; minimum chunk length. We make an exception</span>
+    <span class="c1"># for when the chunk is equal to x as we want to guarantee HVite is</span>
+    <span class="c1"># always called at least once, no matter how short the audio.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">chunk_len</span> <span class="o">&lt;</span> <span class="n">rec_len</span> <span class="ow">and</span> <span class="n">chunk_len</span> <span class="o">&lt;</span> <span class="n">min_chunk_len</span><span class="p">):</span>
+        <span class="n">min_chunk_dur</span> <span class="o">=</span> <span class="n">min_chunk_len</span> <span class="o">/</span> <span class="n">sr</span>
+        <span class="k">raise</span> <span class="n">DecodingError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;Minimum chunk duration reached during recursion: &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">chunk_dur</span><span class="si">}</span><span class="s1"> &lt; </span><span class="si">{</span><span class="n">min_chunk_dur</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+    <span class="c1"># Actually attempt decoding via HVite.</span>
+    <span class="c1"># TODO: Move recursion outside of try...except block.</span>
+    <span class="n">tmp_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">())</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Base case: HVite finishes successfully; return segments.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Decoding chunk: CHUNK_ONSET: </span><span class="si">{</span><span class="n">chunk_onset</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">, &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;CHUNK_OFFSET: </span><span class="si">{</span><span class="n">chunk_offset</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">, CHUNK_DUR: </span><span class="si">{</span><span class="n">chunk_dur</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">wav_path</span> <span class="o">=</span> <span class="n">tmp_dir</span> <span class="o">/</span> <span class="s1">&#39;chunk.wav&#39;</span>
+        <span class="n">sf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">wav_path</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="n">bi</span><span class="p">:</span><span class="n">ei</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">sr</span><span class="p">,</span> <span class="s1">&#39;PCM_16&#39;</span><span class="p">)</span>
+        <span class="n">lab_path</span> <span class="o">=</span> <span class="n">hvite</span><span class="p">(</span>
+            <span class="n">wav_path</span><span class="p">,</span> <span class="n">hvite_config</span><span class="p">,</span> <span class="n">tmp_dir</span><span class="p">)</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="n">load_htk_label_file</span><span class="p">(</span>
+            <span class="n">lab_path</span><span class="p">,</span> <span class="n">target_labels</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;speech&#39;</span><span class="p">],</span> <span class="n">in_sec</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">chunk_onset</span><span class="p">)</span> <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">segs</span><span class="p">]</span>
+    <span class="k">except</span> <span class="n">HTKSegfault</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Recursive case: Retry HVite on two shorter chunks.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">silent</span><span class="p">:</span>
+            <span class="c1"># TODO: Print traceback if we can limit the number of frames.</span>
+            <span class="c1"># Otherwise, becomes unreadable due to the recursion.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Decoding failed. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">mid</span> <span class="o">=</span> <span class="p">(</span><span class="n">bi</span> <span class="o">+</span> <span class="n">ei</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="n">_decode_chunk</span><span class="p">(</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">mid</span><span class="p">,</span> <span class="n">min_chunk_len</span><span class="p">,</span> <span class="n">hvite_config</span><span class="p">,</span> <span class="n">silent</span><span class="p">)</span>
+        <span class="n">segs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="n">_decode_chunk</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">mid</span><span class="p">,</span> <span class="n">ei</span><span class="p">,</span> <span class="n">min_chunk_len</span><span class="p">,</span> <span class="n">hvite_config</span><span class="p">,</span> <span class="n">silent</span><span class="p">))</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">tmp_dir</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">segs</span>
+
+
+<div class="viewcode-block" id="decode"><a class="viewcode-back" href="../../generated/ldc_bpcsad.decode.decode.html#ldc_bpcsad.decode.decode">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">min_speech_dur</span><span class="o">=</span><span class="mf">0.500</span><span class="p">,</span> <span class="n">min_nonspeech_dur</span><span class="o">=</span><span class="mf">0.300</span><span class="p">,</span>
+           <span class="n">min_chunk_dur</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">max_chunk_dur</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span> <span class="n">speech_scale_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+           <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform speech activity detection an audio signal.</span>
+
+<span class="sd">    Because HTK&#39;s ``HVite`` command sometimes fails for longer recordings, we</span>
+<span class="sd">    first split `x` into chunks of at most `max_chunk_dur` seconds, segment</span>
+<span class="sd">    each chunk separately, then merge the results. The individual chunks are</span>
+<span class="sd">    segmented using a recursive approach that calls ``HVite`` with progressively</span>
+<span class="sd">    smaller chunks until a minimum chunk duration (`min_chunk_dur`) is reached.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : numpy.ndarray (n_samples)</span>
+<span class="sd">        Audio samples.</span>
+
+<span class="sd">    sr : int</span>
+<span class="sd">        Sample rate (Hz).</span>
+
+<span class="sd">    min_speech_dur : float, optional</span>
+<span class="sd">        Minimum duration of speech segments in seconds.</span>
+<span class="sd">        (Default: 0.500)</span>
+
+<span class="sd">    min_nonspeech_dur : float, optional</span>
+<span class="sd">        Minimum duration of nonspeech segments in seconds.</span>
+<span class="sd">        (Default: 0.300)</span>
+
+<span class="sd">    min_chunk_dur : float, optional</span>
+<span class="sd">        Minimum duration in seconds of chunk SAD may be performed on when</span>
+<span class="sd">        splitting long recordings.</span>
+<span class="sd">        (Default: 10.0)</span>
+
+<span class="sd">    max_chunk_dur : float, optional</span>
+<span class="sd">        Maximum duration in seconds of chunk SAD may be performed on when</span>
+<span class="sd">        splitting long recordings.</span>
+<span class="sd">        (Default: 3600.0)</span>
+
+<span class="sd">    speech_scale_factor : float, optional</span>
+<span class="sd">        Factor by which speech model acoustic likelihoods are scaled prior to</span>
+<span class="sd">        beam search. Larger values will bias the SAD engine in favour of more</span>
+<span class="sd">        speech segments.</span>
+<span class="sd">        (Default: 1)</span>
+
+<span class="sd">    silent: bool, optional</span>
+<span class="sd">        If True, suppress all logging messages.</span>
+<span class="sd">        (Default: True)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    segs : List[Segment]</span>
+<span class="sd">        Detected speech segments.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    DecodingError</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Load model.</span>
+        <span class="n">hvite_config</span> <span class="o">=</span> <span class="n">HViteConfig</span><span class="o">.</span><span class="n">from_model_dir</span><span class="p">(</span><span class="n">MODEL_DIR</span><span class="p">)</span>
+        <span class="n">new_hmmdefs_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mktemp</span><span class="p">())</span>
+        <span class="n">write_hmmdefs</span><span class="p">(</span>
+            <span class="n">hvite_config</span><span class="o">.</span><span class="n">hmmdefs_path</span><span class="p">,</span> <span class="n">new_hmmdefs_path</span><span class="p">,</span> <span class="n">speech_scale_factor</span><span class="p">,</span>
+            <span class="n">SPEECH_PHONES</span><span class="p">)</span>
+        <span class="n">hvite_config</span><span class="o">.</span><span class="n">hmmdefs_path</span> <span class="o">=</span> <span class="n">new_hmmdefs_path</span>
+
+        <span class="c1"># Resample to 16 kHz for feature extraction.</span>
+        <span class="n">rec_dur</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">/</span> <span class="n">sr</span>  <span class="c1"># Determine duration PRIOR to resampling.</span>
+        <span class="k">if</span> <span class="n">sr</span> <span class="o">!=</span> <span class="mi">16000</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">resample</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="mi">16000</span><span class="p">)</span>
+            <span class="n">sr</span> <span class="o">=</span> <span class="mi">16000</span>
+
+        <span class="c1"># Determine boundaries of the chunks for segmentation.</span>
+        <span class="n">n_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">min_chunk_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">min_chunk_dur</span> <span class="o">*</span> <span class="n">sr</span><span class="p">),</span> <span class="n">n_samples</span><span class="p">)</span>
+        <span class="n">max_chunk_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">max_chunk_dur</span> <span class="o">*</span> <span class="n">sr</span><span class="p">),</span> <span class="n">n_samples</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n_samples</span> <span class="o">&lt;=</span> <span class="n">max_chunk_len</span><span class="p">:</span>
+            <span class="n">bounds</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bounds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">max_chunk_len</span><span class="p">))</span>
+            <span class="n">final_chunk_len</span> <span class="o">=</span> <span class="n">n_samples</span> <span class="o">-</span> <span class="n">bounds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">final_chunk_len</span> <span class="o">&lt;</span> <span class="n">min_chunk_len</span><span class="p">:</span>
+                <span class="c1"># Absorb remainder of x into final chunk.</span>
+                <span class="n">bounds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_samples</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Assign remainder of x to its own chunk.</span>
+                <span class="n">bounds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)</span>
+        <span class="n">chunks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">bounds</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+
+        <span class="c1"># Segment.</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">bi</span><span class="p">,</span> <span class="n">ei</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">:</span>
+            <span class="n">segs_</span> <span class="o">=</span> <span class="n">_decode_chunk</span><span class="p">(</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">ei</span><span class="p">,</span> <span class="n">min_chunk_len</span><span class="p">,</span> <span class="n">hvite_config</span><span class="p">,</span> <span class="n">silent</span><span class="p">)</span>
+            <span class="n">segs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">segs_</span><span class="p">)</span>
+
+        <span class="c1"># Smoothe segmentation by:</span>
+        <span class="c1">#   - merging speech segments separated by &lt; min_nonspeech_dur seconds</span>
+        <span class="c1">#   - filtering speech segments &lt; min_speech_dur seconds</span>
+        <span class="n">min_nonspeech_dur</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_nonspeech_dur</span><span class="p">,</span> <span class="mf">0.010</span><span class="p">)</span>  <span class="c1"># Gaps &lt; 10 ms are artifacts.</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="n">Segment</span><span class="o">.</span><span class="n">merge_segs</span><span class="p">(</span><span class="n">segs</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="n">min_nonspeech_dur</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">segs</span><span class="p">:</span>
+            <span class="c1"># Extend speech segments at beginning/end of recording if the</span>
+            <span class="c1"># adjacent gaps are &lt;= min_speech_dur seconds.</span>
+            <span class="k">if</span> <span class="n">segs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">onset</span> <span class="o">&lt;=</span> <span class="n">min_nonspeech_dur</span><span class="p">:</span>
+                <span class="n">segs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">onset</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">rec_dur</span> <span class="o">-</span> <span class="n">segs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">min_nonspeech_dur</span><span class="p">:</span>
+                <span class="n">segs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">rec_dur</span>
+
+            <span class="c1"># Ensure last segment does not extend past edge of recording.</span>
+            <span class="n">segs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">segs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="n">rec_dur</span><span class="p">)</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="p">[</span><span class="n">seg</span> <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">segs</span> <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">duration</span> <span class="o">&gt;=</span> <span class="n">min_speech_dur</span><span class="p">]</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">new_hmmdefs_path</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">segs</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2012-2022, Trustees of the University of Pennsylvania.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
